@@ -1,0 +1,1 @@
+SELECT * FROM avance_proyecto.tasks;
