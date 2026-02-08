@@ -1,4 +1,5 @@
-// ============ MANEJO DE LOGIN Y REGISTRO ============
+// ============ CONFIGURACIÓN ============
+const API_URL = 'http://localhost:3000/api'; // La dirección de tu servidor
 
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
@@ -22,52 +23,69 @@ loginLink?.addEventListener('click', (e) => {
     loginCard.style.display = 'block';
 });
 
-// Manejar login
-loginForm?.addEventListener('submit', (e) => {
+// Manejar login (CONECTADO A BD)
+loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    if (username.trim() === '' || password.trim() === '') {
-        errorMessage.textContent = 'Completa todos los campos';
-        errorMessage.style.display = 'block';
-        return;
-    }
+    try {
+        const response = await fetch(`${API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
 
-    // Guardar sesión en localStorage
-    localStorage.setItem('currentUser', username);
-    localStorage.setItem('userPassword', password);
-    
-    // Ir a página principal
-    window.location.href = 'Pagina_principal.html';
+        const data = await response.json();
+
+        if (response.ok) {
+            // Guardamos el token y usuario si el login es exitoso
+            localStorage.setItem('token', data.token); 
+            localStorage.setItem('currentUser', username);
+            window.location.href = 'Pagina_principal.html';
+        } else {
+            errorMessage.textContent = data.error || 'Error al iniciar sesión';
+            errorMessage.style.display = 'block';
+        }
+    } catch (error) {
+        console.error(error);
+        errorMessage.textContent = 'Error de conexión con el servidor';
+        errorMessage.style.display = 'block';
+    }
 });
 
-// Manejar registro
-registerForm?.addEventListener('submit', (e) => {
+// Manejar registro (CONECTADO A BD)
+registerForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('regUsername').value;
     const password = document.getElementById('regPassword').value;
     const email = document.getElementById('regEmail').value;
 
-    if (username.trim() === '' || password.trim() === '') {
-        registerErrorMessage.textContent = 'Usuario y contraseña son obligatorios';
+    try {
+        const response = await fetch(`${API_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, email })
+        });
+
+        if (response.ok) {
+            alert('¡Registro exitoso! Ahora inicia sesión.');
+            registerCard.style.display = 'none';
+            loginCard.style.display = 'block';
+        } else {
+            const data = await response.json();
+            registerErrorMessage.textContent = data.message || 'Error al registrarse';
+            registerErrorMessage.style.display = 'block';
+        }
+    } catch (error) {
+        registerErrorMessage.textContent = 'Error de conexión';
         registerErrorMessage.style.display = 'block';
-        return;
     }
-
-    // Guardar usuario en localStorage
-    localStorage.setItem('currentUser', username);
-    localStorage.setItem('userPassword', password);
-    if (email) localStorage.setItem('userEmail', email);
-
-    // Ir a página principal
-    window.location.href = 'Pagina_principal.html';
 });
 
 // ============ MANEJO DE PÁGINA PRINCIPAL ============
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Verificar si el usuario está autenticado
     if (document.getElementById('userDisplay')) {
         verificarAutenticacion();
         inicializarPaginaPrincipal();
@@ -84,306 +102,258 @@ function verificarAutenticacion() {
 }
 
 function logoutUsuario() {
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('userPassword');
-    localStorage.removeItem('userEmail');
+    localStorage.clear(); // Borra todo (usuario y token)
     window.location.href = 'index.html';
 }
 
 document.getElementById('logoutBtn')?.addEventListener('click', logoutUsuario);
 
-// Cambio de secciones
 function inicializarPaginaPrincipal() {
+    // Lógica de pestañas (Menú lateral)
     const menuBtns = document.querySelectorAll('.menu-btn');
     const sections = document.querySelectorAll('.section');
 
     menuBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            // Remover clase activa de botones y secciones
             menuBtns.forEach(b => b.classList.remove('active'));
             sections.forEach(s => s.classList.remove('active'));
-
-            // Añadir clase activa
             btn.classList.add('active');
             const sectionId = btn.getAttribute('data-section') + 'Section';
             document.getElementById(sectionId).classList.add('active');
         });
     });
 
-    // Cargar datos al iniciar
-    cargarAnimales();
-    cargarUsuarios();
+    // Cargar datos reales desde MySQL
+    cargarCanciones();
+    cargarFans();
     cargarTareas();
     cargarEventos();
 }
 
-// ============ GESTIÓN DE CANCIONES ============
+// ============ 1. GESTIÓN DE CANCIONES (MySQL) ============
 
-function agregarCancion() {
+async function agregarCancion() {
     const titulo = document.getElementById('cancionTitulo').value.trim();
     const artista = document.getElementById('cancionArtista').value.trim();
     const genero = document.getElementById('cancionGenero').value.trim();
 
-    if (!titulo || !artista) {
-        alert('⚠️ Por favor completa el título y artista');
-        return;
-    }
+    if (!titulo || !artista) return alert('⚠️ Faltan datos');
 
-    const canciones = JSON.parse(localStorage.getItem('canciones') || '[]');
-    const nuevaCancion = {
-        id: Date.now(),
-        titulo,
-        artista,
-        genero,
-        fechaAgregada: new Date().toLocaleDateString()
-    };
+    await fetch(`${API_URL}/canciones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, artista, genero })
+    });
 
-    canciones.push(nuevaCancion);
-    localStorage.setItem('canciones', JSON.stringify(canciones));
-
-    // Limpiar inputs
+    // Limpiar y recargar
     document.getElementById('cancionTitulo').value = '';
     document.getElementById('cancionArtista').value = '';
     document.getElementById('cancionGenero').value = '';
-
-    cargarAnimales();
+    cargarCanciones();
 }
 
-function cargarAnimales() {
-    const canciones = JSON.parse(localStorage.getItem('canciones') || '[]');
-    const container = document.getElementById('cancionesContainer');
+async function cargarCanciones() {
+    try {
+        const response = await fetch(`${API_URL}/canciones`);
+        const canciones = await response.json();
+        const container = document.getElementById('cancionesContainer');
 
-    if (canciones.length === 0) {
-        container.innerHTML = '<p class="empty-message">No hay canciones guardadas. ¡Añade una!</p>';
-        return;
-    }
+        if (canciones.length === 0) {
+            container.innerHTML = '<p class="empty-message">No hay canciones en la BD.</p>';
+            return;
+        }
 
-    container.innerHTML = canciones.map(cancion => `
-        <div class="item-card cancion-card">
-            <div class="item-header">
-                <h3>🎵 ${cancion.titulo.toUpperCase()}</h3>
-                <button class="btn-delete" onclick="eliminarCancion(${cancion.id})">🗑️</button>
+        container.innerHTML = canciones.map(c => `
+            <div class="item-card cancion-card">
+                <div class="item-header">
+                    <h3>🎵 ${c.titulo.toUpperCase()}</h3>
+                    <button class="btn-delete" onclick="eliminarCancion(${c.id})">🗑️</button>
+                </div>
+                <p><strong>ARTISTA:</strong> ${c.artista.toUpperCase()}</p>
+                <p><strong>GÉNERO:</strong> ${(c.genero || '---').toUpperCase()}</p>
             </div>
-            <p><strong>ARTISTA:</strong> ${cancion.artista.toUpperCase()}</p>
-            <p><strong>GÉNERO:</strong> ${(cancion.genero || 'NO ESPECIFICADO').toUpperCase()}</p>
-            <small>Agregado: ${cancion.fechaAgregada}</small>
-        </div>
-    `).join('');
-}
-
-function eliminarCancion(id) {
-    if (confirm('¿Estás seguro de que quieres eliminar esta canción?')) {
-        let canciones = JSON.parse(localStorage.getItem('canciones') || '[]');
-        canciones = canciones.filter(c => c.id !== id);
-        localStorage.setItem('canciones', JSON.stringify(canciones));
-        cargarAnimales();
+        `).join('');
+    } catch (error) {
+        console.error("Error cargando canciones:", error);
     }
 }
 
-// ============ GESTIÓN DE USUARIOS ============
+async function eliminarCancion(id) {
+    if (confirm('¿Eliminar canción?')) {
+        await fetch(`${API_URL}/canciones/${id}`, { method: 'DELETE' });
+        cargarCanciones();
+    }
+}
 
-function agregarUsuario() {
+// ============ 2. GESTIÓN DE FANS (MySQL) ============
+
+async function agregarUsuario() {
     const nombre = document.getElementById('usuarioNombre').value.trim();
     const email = document.getElementById('usuarioEmail').value.trim();
     const pais = document.getElementById('usuarioPais').value.trim();
 
-    if (!nombre) {
-        alert('Por favor ingresa el nombre del fan');
-        return;
-    }
+    if (!nombre) return alert('Nombre obligatorio');
 
-    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-    const nuevoUsuario = {
-        id: Date.now(),
-        nombre,
-        email,
-        pais,
-        fechaRegistro: new Date().toLocaleDateString()
-    };
+    await fetch(`${API_URL}/fans`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, email, pais })
+    });
 
-    usuarios.push(nuevoUsuario);
-    localStorage.setItem('usuarios', JSON.stringify(usuarios));
-
-    // Limpiar inputs
     document.getElementById('usuarioNombre').value = '';
     document.getElementById('usuarioEmail').value = '';
     document.getElementById('usuarioPais').value = '';
-
-    cargarUsuarios();
+    cargarFans();
 }
 
-function cargarUsuarios() {
-    const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-    const container = document.getElementById('usuariosContainer');
+async function cargarFans() {
+    try {
+        const response = await fetch(`${API_URL}/fans`);
+        const fans = await response.json();
+        const container = document.getElementById('usuariosContainer');
 
-    if (usuarios.length === 0) {
-        container.innerHTML = '<p class="empty-message">No hay fans registrados. ¡Sé el primero!</p>';
-        return;
-    }
+        if (fans.length === 0) {
+            container.innerHTML = '<p class="empty-message">No hay fans registrados.</p>';
+            return;
+        }
 
-    container.innerHTML = usuarios.map(usuario => `
-        <div class="item-card usuario-card">
-            <div class="item-header">
-                <h3>👥 ${usuario.nombre.toUpperCase()}</h3>
-                <button class="btn-delete" onclick="eliminarUsuario(${usuario.id})">🗑️</button>
+        container.innerHTML = fans.map(f => `
+            <div class="item-card usuario-card">
+                <div class="item-header">
+                    <h3>👥 ${f.nombre.toUpperCase()}</h3>
+                    <button class="btn-delete" onclick="eliminarFan(${f.id})">🗑️</button>
+                </div>
+                <p><strong>EMAIL:</strong> ${f.email || '---'}</p>
+                <p><strong>PAÍS:</strong> ${(f.pais || '---').toUpperCase()}</p>
             </div>
-            <p><strong>EMAIL:</strong> ${usuario.email || 'NO PROPORCIONADO'}</p>
-            <p><strong>UBICACIÓN:</strong> ${(usuario.pais || 'NO ESPECIFICADA').toUpperCase()}</p>
-            <small>Registrado: ${usuario.fechaRegistro}</small>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (e) { console.error(e); }
 }
 
-function eliminarUsuario(id) {
-    if (confirm('¿Eliminar este fan?')) {
-        let usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
-        usuarios = usuarios.filter(u => u.id !== id);
-        localStorage.setItem('usuarios', JSON.stringify(usuarios));
-        cargarUsuarios();
+async function eliminarFan(id) {
+    if (confirm('¿Eliminar fan?')) {
+        await fetch(`${API_URL}/fans/${id}`, { method: 'DELETE' });
+        cargarFans();
     }
 }
 
-// ============ GESTIÓN DE TAREAS ============
+// ============ 3. GESTIÓN DE TAREAS (MySQL) ============
 
-function agregarTarea() {
+async function agregarTarea() {
     const titulo = document.getElementById('tareaTitulo').value.trim();
     const descripcion = document.getElementById('tareaDescripcion').value.trim();
     const prioridad = document.getElementById('tareaPrioridad').value;
 
-    if (!titulo) {
-        alert('⚠️ Por favor ingresa el título de la tarea');
-        return;
-    }
+    if (!titulo) return alert('Título requerido');
 
-    const tareas = JSON.parse(localStorage.getItem('tareas') || '[]');
-    const nuevaTarea = {
-        id: Date.now(),
-        titulo,
-        descripcion,
-        prioridad,
-        completada: false,
-        fechaCreacion: new Date().toLocaleDateString()
-    };
+    await fetch(`${API_URL}/tareas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, descripcion, prioridad })
+    });
 
-    tareas.push(nuevaTarea);
-    localStorage.setItem('tareas', JSON.stringify(tareas));
-
-    // Limpiar inputs
     document.getElementById('tareaTitulo').value = '';
     document.getElementById('tareaDescripcion').value = '';
-    document.getElementById('tareaPrioridad').value = 'baja';
-
     cargarTareas();
 }
 
-function cargarTareas() {
-    const tareas = JSON.parse(localStorage.getItem('tareas') || '[]');
-    const container = document.getElementById('tareasContainer');
+async function cargarTareas() {
+    try {
+        const response = await fetch(`${API_URL}/tareas`);
+        const tareas = await response.json();
+        const container = document.getElementById('tareasContainer');
 
-    if (tareas.length === 0) {
-        container.innerHTML = '<p class="empty-message">No hay tareas. ¡Añade una para no olvidar nada!</p>';
-        return;
-    }
+        if (tareas.length === 0) {
+            container.innerHTML = '<p class="empty-message">Sin tareas pendientes.</p>';
+            return;
+        }
 
-    container.innerHTML = tareas.map(tarea => `
-        <div class="item-card tarea-card ${tarea.completada ? 'completada' : ''}">
-            <div class="item-header">
-                <h3>
-                    <input type="checkbox" ${tarea.completada ? 'checked' : ''} 
-                           onchange="toggleTarea(${tarea.id})">
-                    ${tarea.titulo.toUpperCase()}
-                </h3>
-                <button class="btn-delete" onclick="eliminarTarea(${tarea.id})">🗑️</button>
+        container.innerHTML = tareas.map(t => `
+            <div class="item-card tarea-card ${t.completada ? 'completada' : ''}">
+                <div class="item-header">
+                    <h3>
+                        <input type="checkbox" ${t.completada ? 'checked' : ''} 
+                               onchange="toggleTarea(${t.id}, ${!t.completada})">
+                        ${t.titulo.toUpperCase()}
+                    </h3>
+                    <button class="btn-delete" onclick="eliminarTarea(${t.id})">🗑️</button>
+                </div>
+                <p>${(t.descripcion || '').toUpperCase()}</p>
+                <div class="tarea-footer">
+                    <span class="prioridad-${t.prioridad}">
+                        ${t.prioridad === 'baja' ? '🟢 BAJA' : t.prioridad === 'media' ? '🟡 MEDIA' : '🔴 ALTA'}
+                    </span>
+                </div>
             </div>
-            <p>${(tarea.descripcion || 'SIN DESCRIPCIÓN').toUpperCase()}</p>
-            <div class="tarea-footer">
-                <span class="prioridad-${tarea.prioridad}">
-                    ${tarea.prioridad === 'baja' ? '🟢 BAJA' : tarea.prioridad === 'media' ? '🟡 MEDIA' : '🔴 ALTA'}
-                </span>
-                <small>Creada: ${tarea.fechaCreacion}</small>
-            </div>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (e) { console.error(e); }
 }
 
-function toggleTarea(id) {
-    let tareas = JSON.parse(localStorage.getItem('tareas') || '[]');
-    const tarea = tareas.find(t => t.id === id);
-    if (tarea) {
-        tarea.completada = !tarea.completada;
-        localStorage.setItem('tareas', JSON.stringify(tareas));
+async function toggleTarea(id, nuevoEstado) {
+    // Enviamos el nuevo estado (true/false) al backend
+    await fetch(`${API_URL}/tareas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completada: nuevoEstado })
+    });
+    cargarTareas();
+}
+
+async function eliminarTarea(id) {
+    if (confirm('¿Eliminar tarea?')) {
+        await fetch(`${API_URL}/tareas/${id}`, { method: 'DELETE' });
         cargarTareas();
     }
 }
 
-function eliminarTarea(id) {
-    if (confirm('¿Eliminar esta tarea?')) {
-        let tareas = JSON.parse(localStorage.getItem('tareas') || '[]');
-        tareas = tareas.filter(t => t.id !== id);
-        localStorage.setItem('tareas', JSON.stringify(tareas));
-        cargarTareas();
-    }
-}
+// ============ 4. GESTIÓN DE EVENTOS (MySQL) ============
 
-// ============ GESTIÓN DE EVENTOS ============
-
-function agregarEvento() {
+async function agregarEvento() {
     const nombre = document.getElementById('eventoNombre').value.trim();
     const fecha = document.getElementById('eventoFecha').value;
     const lugar = document.getElementById('eventoLugar').value.trim();
 
-    if (!nombre || !fecha) {
-        alert('Por favor completa el nombre y la fecha del evento');
-        return;
-    }
+    if (!nombre || !fecha) return alert('Datos incompletos');
 
-    const eventos = JSON.parse(localStorage.getItem('eventos') || '[]');
-    const nuevoEvento = {
-        id: Date.now(),
-        nombre,
-        fecha,
-        lugar,
-        fechaCreacion: new Date().toLocaleDateString()
-    };
+    await fetch(`${API_URL}/eventos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, fecha, lugar })
+    });
 
-    eventos.push(nuevoEvento);
-    localStorage.setItem('eventos', JSON.stringify(eventos));
-
-    // Limpiar inputs
     document.getElementById('eventoNombre').value = '';
     document.getElementById('eventoFecha').value = '';
     document.getElementById('eventoLugar').value = '';
-
     cargarEventos();
 }
 
-function cargarEventos() {
-    const eventos = JSON.parse(localStorage.getItem('eventos') || '[]');
-    const container = document.getElementById('eventosContainer');
+async function cargarEventos() {
+    try {
+        const response = await fetch(`${API_URL}/eventos`);
+        const eventos = await response.json();
+        const container = document.getElementById('eventosContainer');
 
-    if (eventos.length === 0) {
-        container.innerHTML = '<p class="empty-message">No hay eventos próximos. ¡Mantente atento!</p>';
-        return;
-    }
+        if (eventos.length === 0) {
+            container.innerHTML = '<p class="empty-message">No hay eventos.</p>';
+            return;
+        }
 
-    container.innerHTML = eventos.map(evento => `
-        <div class="item-card evento-card">
-            <div class="item-header">
-                <h3>📅 ${evento.nombre.toUpperCase()}</h3>
-                <button class="btn-delete" onclick="eliminarEvento(${evento.id})">🗑️</button>
+        container.innerHTML = eventos.map(e => `
+            <div class="item-card evento-card">
+                <div class="item-header">
+                    <h3>📅 ${e.nombre.toUpperCase()}</h3>
+                    <button class="btn-delete" onclick="eliminarEvento(${e.id})">🗑️</button>
+                </div>
+                <p><strong>FECHA:</strong> ${new Date(e.fecha).toLocaleDateString()}</p>
+                <p><strong>LUGAR:</strong> ${(e.lugar || '---').toUpperCase()}</p>
             </div>
-            <p><strong>FECHA:</strong> ${evento.fecha}</p>
-            <p><strong>LUGAR:</strong> ${(evento.lugar || 'POR CONFIRMAR').toUpperCase()}</p>
-            <small>Publicado: ${evento.fechaCreacion}</small>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (e) { console.error(e); }
 }
 
-function eliminarEvento(id) {
-    if (confirm('¿Eliminar este evento?')) {
-        let eventos = JSON.parse(localStorage.getItem('eventos') || '[]');
-        eventos = eventos.filter(e => e.id !== id);
-        localStorage.setItem('eventos', JSON.stringify(eventos));
+async function eliminarEvento(id) {
+    if (confirm('¿Eliminar evento?')) {
+        await fetch(`${API_URL}/eventos/${id}`, { method: 'DELETE' });
         cargarEventos();
     }
 }
