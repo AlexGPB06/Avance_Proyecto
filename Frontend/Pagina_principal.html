@@ -2,19 +2,132 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Pagina_principal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palomas del Gobierno - Comunidad</title>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <h1>Prueba de Backend</h1>
-    
-    <div style="background: #f0f0f0; padding: 10px;">
-        <h3>Nueva Tarea</h3>
-        <input type="text" id="title" placeholder="Título">
-        <input type="text" id="description" placeholder="Descripción">
-        <button onclick="crearTarea()">Guardar</button>
-    </div>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <img src="./img/PDG.jpeg" alt="PDG" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #ff0000;">
+                <h1 class="navbar-title">PALOMAS DEL GOBIERNO</h1>
+            </div>
+            <div class="navbar-user">
+                <span id="userDisplay"></span>
+                <button id="logoutBtn" class="btn-logout">SALIR</button>
+            </div>
+        </div>
+    </nav>
 
-    <div id="taskContainer"></div>
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="sidebar-menu">
+                <button class="menu-btn active" data-section="canciones">
+                    🎵 CANCIONES
+                </button>
+                <button class="menu-btn" data-section="usuarios">
+                    👥 FANS
+                </button>
+                <button class="menu-btn" data-section="tareas">
+                    ✓ TAREAS
+                </button>
+                <button class="menu-btn" data-section="eventos">
+                    📅 EVENTOS
+                </button>
+            </div>
+        </aside>
+
+        <main class="content">
+            <!-- Sección de Canciones -->
+            <section id="cancionesSection" class="section active">
+                <div class="section-header">
+                    <h2>🎵 CANCIONES FAVORITAS</h2>
+                </div>
+
+                <div class="form-section">
+                    <h3>AGREGAR NUEVA CANCIÓN</h3>
+                    <div class="form-group-row">
+                        <input type="text" id="cancionTitulo" placeholder="Título de la canción" class="form-input">
+                        <input type="text" id="cancionArtista" placeholder="Artista / Álbum" class="form-input">
+                        <input type="text" id="cancionGenero" placeholder="Género" class="form-input">
+                        <button onclick="agregarCancion()" class="btn-add">⚡ AGREGAR</button>
+                    </div>
+                </div>
+
+                <div id="cancionesContainer" class="items-container">
+                    <p class="empty-message">No hay canciones guardadas. ¡Añade una!</p>
+                </div>
+            </section>
+
+            <!-- Sección de Usuarios -->
+            <section id="usuariosSection" class="section">
+                <div class="section-header">
+                    <h2>👥 FANS / COMUNIDAD</h2>
+                </div>
+
+                <div class="form-section">
+                    <h3>REGISTRAR NUEVO FAN</h3>
+                    <div class="form-group-row">
+                        <input type="text" id="usuarioNombre" placeholder="Nombre del fan" class="form-input">
+                        <input type="email" id="usuarioEmail" placeholder="Email" class="form-input">
+                        <input type="text" id="usuarioPais" placeholder="País / Ciudad" class="form-input">
+                        <button onclick="agregarUsuario()" class="btn-add">⚡ AÑADIR</button>
+                    </div>
+                </div>
+
+                <div id="usuariosContainer" class="items-container">
+                    <p class="empty-message">No hay fans registrados. ¡Sé el primero!</p>
+                </div>
+            </section>
+
+            <!-- Sección de Tareas -->
+            <section id="tareasSection" class="section">
+                <div class="section-header">
+                    <h2>✓ TAREAS / RECORDATORIOS</h2>
+                </div>
+
+                <div class="form-section">
+                    <h3>CREAR NUEVA TAREA</h3>
+                    <div class="form-group-row">
+                        <input type="text" id="tareaTitulo" placeholder="Título de la tarea" class="form-input">
+                        <input type="text" id="tareaDescripcion" placeholder="Descripción" class="form-input">
+                        <select id="tareaPrioridad" class="form-input">
+                            <option value="baja">🟢 BAJA</option>
+                            <option value="media">🟡 MEDIA</option>
+                            <option value="alta">🔴 ALTA</option>
+                        </select>
+                        <button onclick="agregarTarea()" class="btn-add">CREAR</button>
+                    </div>
+                </div>
+
+                <div id="tareasContainer" class="items-container">
+                    <p class="empty-message">No hay tareas. ¡Añade una para no olvidar nada!</p>
+                </div>
+            </section>
+
+            <!-- Sección de Eventos -->
+            <section id="eventosSection" class="section">
+                <div class="section-header">
+                    <h2>📅 EVENTOS / CONCIERTOS</h2>
+                </div>
+
+                <div class="form-section">
+                    <h3>PUBLICAR NUEVO EVENTO</h3>
+                    <div class="form-group-row">
+                        <input type="text" id="eventoNombre" placeholder="Nombre del evento" class="form-input">
+                        <input type="date" id="eventoFecha" class="form-input">
+                        <input type="text" id="eventoLugar" placeholder="Lugar / Ciudad" class="form-input">
+                        <button onclick="agregarEvento()" class="btn-add">⚡ PUBLICAR</button>
+                    </div>
+                </div>
+
+                <div id="eventosContainer" class="items-container">
+                    <p class="empty-message">No hay eventos próximos. ¡Mantente atento!</p>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <script src="./app.js"></script>
 </body>

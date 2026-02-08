@@ -2,19 +2,102 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Cliente de Prueba</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palomas del Gobierno - Login</title>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <h1>Prueba de Backend</h1>
-    
-    <div style="background: #f0f0f0; padding: 10px;">
-        <h3>Nueva Tarea</h3>
-        <input type="text" id="title" placeholder="Título">
-        <input type="text" id="description" placeholder="Descripción">
-        <button onclick="crearTarea()">Guardar</button>
-    </div>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="./img/PDG.jpeg" alt="Palomas del Gobierno">
+                <h1>PALOMAS DEL GOBIERNO</h1>
+                <p class="tagline">COMUNIDAD DE FANS - ROCK MEXICANO</p>
+            </div>
 
-    <div id="taskContainer"></div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">USUARIO</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        placeholder="Ingresa tu usuario" 
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">CONTRASEÑA</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Ingresa tu contraseña" 
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn-login">⚡ INICIAR SESIÓN ⚡</button>
+            </form>
+
+            <div class="login-footer">
+                <p>¿PRIMERA VEZ? <a href="#" id="registerLink">CREAR CUENTA</a></p>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+
+        <div class="register-card" id="registerCard" style="display: none;">
+            <div class="login-header">
+                <img src="./img/PDG.jpeg" alt="Palomas del Gobierno">
+                <h1>PALOMAS DEL GOBIERNO</h1>
+                <p class="tagline">ÚNETE A LA COMUNIDAD</p>
+            </div>
+
+            <form id="registerForm" class="login-form">
+                <div class="form-group">
+                    <label for="regUsername">USUARIO</label>
+                    <input 
+                        type="text" 
+                        id="regUsername" 
+                        name="username" 
+                        placeholder="Crea tu usuario" 
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="regPassword">CONTRASEÑA</label>
+                    <input 
+                        type="password" 
+                        id="regPassword" 
+                        name="password" 
+                        placeholder="Crea tu contraseña" 
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="regEmail">EMAIL (OPCIONAL)</label>
+                    <input 
+                        type="email" 
+                        id="regEmail" 
+                        name="email" 
+                        placeholder="tu@email.com"
+                    >
+                </div>
+
+                <button type="submit" class="btn-login">⚡ REGISTRARSE ⚡</button>
+            </form>
+
+            <div class="login-footer">
+                <p><a href="#" id="loginLink">VOLVER AL LOGIN</a></p>
+            </div>
+
+            <div id="registerErrorMessage" class="error-message"></div>
+        </div>
+    </div>
 
     <script src="./app.js"></script>
 </body>

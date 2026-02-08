@@ -1,5 +1,8 @@
-// server.js - EL BACKEND
-require('dotenv').config();
+// backend/server.js
+require('dotenv').config(); // <--- Esto busca el archivo .env en la misma carpeta
+// ... resto de imports
+// Ejemplo de uso:
+const PORT = process.env.PORT || 3000;
 const path = require('path');
 // __dirname le dice a node: "busca en la carpeta donde vive este archivo"
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
