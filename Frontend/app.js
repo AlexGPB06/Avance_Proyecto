@@ -1,5 +1,4 @@
-// ============ CONFIGURACIÓN ============
-const API_URL = 'http://localhost:3000/api'; // La dirección de tu servidor
+const API_URL = 'http://localhost:3000/api'; 
 
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
@@ -9,6 +8,11 @@ const loginCard = document.querySelector('.login-card');
 const registerCard = document.getElementById('registerCard');
 const errorMessage = document.getElementById('errorMessage');
 const registerErrorMessage = document.getElementById('registerErrorMessage');
+
+// Helper para obtener el token
+function getToken() {
+    return localStorage.getItem('token');
+}
 
 // Alternancia entre login y registro
 registerLink?.addEventListener('click', (e) => {
@@ -130,7 +134,7 @@ function inicializarPaginaPrincipal() {
     cargarEventos();
 }
 
-// GESTIÓN DE CANCIONES 
+// --- GESTIÓN DE CANCIONES ---
 
 async function agregarCancion() {
     const titulo = document.getElementById('cancionTitulo').value.trim();
@@ -139,17 +143,26 @@ async function agregarCancion() {
 
     if (!titulo || !artista) return alert('⚠️ Faltan datos');
 
-    await fetch(`${API_URL}/canciones`, {
+    const token = getToken();
+
+    const response = await fetch(`${API_URL}/canciones`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // TOKEN AÑADIDO
+        },
         body: JSON.stringify({ titulo, artista, genero })
     });
 
-    // Limpiar y recargar
-    document.getElementById('cancionTitulo').value = '';
-    document.getElementById('cancionArtista').value = '';
-    document.getElementById('cancionGenero').value = '';
-    cargarCanciones();
+    if (response.ok) {
+        // Limpiar y recargar
+        document.getElementById('cancionTitulo').value = '';
+        document.getElementById('cancionArtista').value = '';
+        document.getElementById('cancionGenero').value = '';
+        cargarCanciones();
+    } else {
+        alert("Error al agregar (¿Sesión expirada?)");
+    }
 }
 
 async function cargarCanciones() {
@@ -180,12 +193,17 @@ async function cargarCanciones() {
 
 async function eliminarCancion(id) {
     if (confirm('¿Eliminar canción?')) {
-        await fetch(`${API_URL}/canciones/${id}`, { method: 'DELETE' });
+        const token = getToken();
+        await fetch(`${API_URL}/canciones/${id}`, { 
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` } // TOKEN AÑADIDO
+        });
         cargarCanciones();
     }
 }
 
-// GESTIÓN DE FANS 
+// --- GESTIÓN DE FANS ---
+
 async function agregarUsuario() {
     const nombre = document.getElementById('usuarioNombre').value.trim();
     const email = document.getElementById('usuarioEmail').value.trim();
@@ -193,9 +211,14 @@ async function agregarUsuario() {
 
     if (!nombre) return alert('Nombre obligatorio');
 
+    const token = getToken();
+
     await fetch(`${API_URL}/fans`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ nombre, email, pais })
     });
 
@@ -231,12 +254,16 @@ async function cargarFans() {
 
 async function eliminarFan(id) {
     if (confirm('¿Eliminar fan?')) {
-        await fetch(`${API_URL}/fans/${id}`, { method: 'DELETE' });
+        const token = getToken();
+        await fetch(`${API_URL}/fans/${id}`, { 
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         cargarFans();
     }
 }
 
-//  GESTIÓN DE TAREAS
+// --- GESTIÓN DE TAREAS ---
 
 async function agregarTarea() {
     const titulo = document.getElementById('tareaTitulo').value.trim();
@@ -245,9 +272,14 @@ async function agregarTarea() {
 
     if (!titulo) return alert('Título requerido');
 
+    const token = getToken();
+
     await fetch(`${API_URL}/tareas`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ titulo, descripcion, prioridad })
     });
 
@@ -280,7 +312,7 @@ async function cargarTareas() {
                 <p>${(t.descripcion || '').toUpperCase()}</p>
                 <div class="tarea-footer">
                     <span class="prioridad-${t.prioridad}">
-                        ${t.prioridad === 'baja' ? '🟢 BAJA' : t.prioridad === 'media' ? '🟡 MEDIA' : '🔴 ALTA'}
+                        ${t.prioridad === 'baja' ? ' BAJA' : t.prioridad === 'media' ? 'MEDIA' : 'ALTA'}
                     </span>
                 </div>
             </div>
@@ -289,10 +321,14 @@ async function cargarTareas() {
 }
 
 async function toggleTarea(id, nuevoEstado) {
-    // Enviamos el nuevo estado (true/false) al backend
+    const token = getToken();
+    // Enviamos el nuevo estado con Token
     await fetch(`${API_URL}/tareas/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ completada: nuevoEstado })
     });
     cargarTareas();
@@ -300,12 +336,16 @@ async function toggleTarea(id, nuevoEstado) {
 
 async function eliminarTarea(id) {
     if (confirm('¿Eliminar tarea?')) {
-        await fetch(`${API_URL}/tareas/${id}`, { method: 'DELETE' });
+        const token = getToken();
+        await fetch(`${API_URL}/tareas/${id}`, { 
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         cargarTareas();
     }
 }
 
-//  GESTIÓN DE EVENTOS
+// --- GESTIÓN DE EVENTOS ---
 
 async function agregarEvento() {
     const nombre = document.getElementById('eventoNombre').value.trim();
@@ -314,9 +354,14 @@ async function agregarEvento() {
 
     if (!nombre || !fecha) return alert('Datos incompletos');
 
+    const token = getToken();
+
     await fetch(`${API_URL}/eventos`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ nombre, fecha, lugar })
     });
 
@@ -352,7 +397,11 @@ async function cargarEventos() {
 
 async function eliminarEvento(id) {
     if (confirm('¿Eliminar evento?')) {
-        await fetch(`${API_URL}/eventos/${id}`, { method: 'DELETE' });
+        const token = getToken();
+        await fetch(`${API_URL}/eventos/${id}`, { 
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         cargarEventos();
     }
 }
