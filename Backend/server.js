@@ -1,6 +1,3 @@
-/* =========================================
-   SERVER.JS - Backend Completo
-   ========================================= */
 require('dotenv').config(); // Cargar variables de entorno
 const express = require('express');
 const mysql = require('mysql2');
@@ -29,11 +26,6 @@ db.connect((err) => {
     }
     console.log('✅ Conectado a la Base de Datos MySQL');
 });
-
-// ==================================================
-// RUTAS DE AUTENTICACIÓN (LOGIN / REGISTER)
-// ==================================================
-
 // 1. REGISTRO DE USUARIO
 app.post('/api/register', async (req, res) => {
     try {
@@ -94,9 +86,6 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// ==================================================
-// RUTAS DE LA APLICACIÓN (CRUD)
-// ==================================================
 
 // --- 1. CANCIONES ---
 app.get('/api/canciones', (req, res) => {

@@ -130,7 +130,7 @@ function inicializarPaginaPrincipal() {
     cargarEventos();
 }
 
-// ============ 1. GESTIÓN DE CANCIONES (MySQL) ============
+// GESTIÓN DE CANCIONES 
 
 async function agregarCancion() {
     const titulo = document.getElementById('cancionTitulo').value.trim();
@@ -185,8 +185,7 @@ async function eliminarCancion(id) {
     }
 }
 
-// ============ 2. GESTIÓN DE FANS (MySQL) ============
-
+// GESTIÓN DE FANS 
 async function agregarUsuario() {
     const nombre = document.getElementById('usuarioNombre').value.trim();
     const email = document.getElementById('usuarioEmail').value.trim();
@@ -237,7 +236,7 @@ async function eliminarFan(id) {
     }
 }
 
-// ============ 3. GESTIÓN DE TAREAS (MySQL) ============
+//  GESTIÓN DE TAREAS
 
 async function agregarTarea() {
     const titulo = document.getElementById('tareaTitulo').value.trim();
@@ -306,7 +305,7 @@ async function eliminarTarea(id) {
     }
 }
 
-// ============ 4. GESTIÓN DE EVENTOS (MySQL) ============
+//  GESTIÓN DE EVENTOS
 
 async function agregarEvento() {
     const nombre = document.getElementById('eventoNombre').value.trim();
