@@ -1,9 +1,10 @@
-require('dotenv').config(); // Cargar variables de entorno
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+    const bcrypt = require('bcryptjs');
+    const jwt = require('jsonwebtoken');
 
 const app = express();
 
@@ -13,10 +14,10 @@ app.use(express.json()); // Permitir leer JSON en las peticiones
 
 // --- CONEXIÓN A BASE DE DATOS ---
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || "Masterchief177#",
-    database: process.env.DB_NAME || 'avance_proyecto'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD, 
+    database: process.env.DB_NAME
 });
 
 db.connect((err) => {
