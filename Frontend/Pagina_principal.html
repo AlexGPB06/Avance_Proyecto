@@ -23,110 +23,92 @@
     <div class="main-container">
         <aside class="sidebar">
             <div class="sidebar-menu">
-                <button class="menu-btn active" data-section="canciones">
-                    🎵 CANCIONES
-                </button>
-                <button class="menu-btn" data-section="usuarios">
-                    👥 FANS
-                </button>
-                <button class="menu-btn" data-section="tareas">
-                    ✓ TAREAS
-                </button>
-                <button class="menu-btn" data-section="eventos">
-                    📅 EVENTOS
-                </button>
+                <button class="menu-btn active" data-section="canciones">🎵 CANCIONES</button>
+                <button class="menu-btn" data-section="usuarios">👥 FANS</button>
+                <button class="menu-btn" data-section="tareas">ALBUMES</button>
+                <button class="menu-btn" data-section="eventos">📅 EVENTOS</button>
             </div>
         </aside>
 
         <main class="content">
-            <!-- Sección de Canciones -->
             <section id="cancionesSection" class="section active">
-                <div class="section-header">
-                    <h2>🎵 CANCIONES FAVORITAS</h2>
-                </div>
-
+                <div class="section-header"><h2>🎵 CANCIONES FAVORITAS</h2></div>
                 <div class="form-section">
                     <h3>AGREGAR NUEVA CANCIÓN</h3>
                     <div class="form-group-row">
-                        <input type="text" id="cancionTitulo" placeholder="Título de la canción" class="form-input">
-                        <input type="text" id="cancionArtista" placeholder="Artista / Álbum" class="form-input">
+                        <input type="text" id="cancionTitulo" placeholder="Título" class="form-input">
+                        <input type="text" id="cancionArtista" placeholder="Artista" class="form-input">
                         <input type="text" id="cancionGenero" placeholder="Género" class="form-input">
                         <button onclick="agregarCancion()" class="btn-add">⚡ AGREGAR</button>
                     </div>
                 </div>
-
-                <div id="cancionesContainer" class="items-container">
-                    <p class="empty-message">No hay canciones guardadas. ¡Añade una!</p>
-                </div>
+                <div id="cancionesContainer" class="items-container"></div>
             </section>
 
-            <!-- Sección de Usuarios -->
             <section id="usuariosSection" class="section">
-                <div class="section-header">
-                    <h2>👥 FANS / COMUNIDAD</h2>
-                </div>
-
+                <div class="section-header"><h2>👥 FANS / COMUNIDAD</h2></div>
                 <div class="form-section">
                     <h3>REGISTRAR NUEVO FAN</h3>
                     <div class="form-group-row">
-                        <input type="text" id="usuarioNombre" placeholder="Nombre del fan" class="form-input">
+                        <input type="text" id="usuarioNombre" placeholder="Nombre" class="form-input">
                         <input type="email" id="usuarioEmail" placeholder="Email" class="form-input">
-                        <input type="text" id="usuarioPais" placeholder="País / Ciudad" class="form-input">
+                        <input type="text" id="usuarioPais" placeholder="País" class="form-input">
                         <button onclick="agregarUsuario()" class="btn-add">⚡ AÑADIR</button>
                     </div>
                 </div>
-
-                <div id="usuariosContainer" class="items-container">
-                    <p class="empty-message">No hay fans registrados. ¡Sé el primero!</p>
-                </div>
+                <div id="usuariosContainer" class="items-container"></div>
             </section>
 
-            <!-- Sección de Tareas -->
             <section id="tareasSection" class="section">
-                <div class="section-header">
-                    <h2>✓ TAREAS / RECORDATORIOS</h2>
-                </div>
-
+                <div class="section-header"><h2>ALBUMES COMPLETADASS</h2></div>
                 <div class="form-section">
-                    <h3>CREAR NUEVA TAREA</h3>
+                    <h3>ALBUMES COMPLETADAS</h3>
                     <div class="form-group-row">
-                        <input type="text" id="tareaTitulo" placeholder="Título de la tarea" class="form-input">
+                        <input type="text" id="tareaTitulo" placeholder="Título" class="form-input">
                         <input type="text" id="tareaDescripcion" placeholder="Descripción" class="form-input">
                         <select id="tareaPrioridad" class="form-input">
-                            <option value="baja">🟢 BAJA</option>
-                            <option value="media">🟡 MEDIA</option>
-                            <option value="alta">🔴 ALTA</option>
+                            <option value="baja">🟢 COMPLETADO</option>
+                            <option value="media">🟡 A MEDIAS</option>
+                            <option value="alta">🔴 SIN ESCHUCHAR</option>
                         </select>
-                        <button onclick="agregarTarea()" class="btn-add">CREAR</button>
+                        <button onclick="agregarTarea()" class="btn-add">AÑADIR</button>
                     </div>
                 </div>
-
-                <div id="tareasContainer" class="items-container">
-                    <p class="empty-message">No hay tareas. ¡Añade una para no olvidar nada!</p>
-                </div>
+                <div id="tareasContainer" class="items-container"></div>
             </section>
 
-            <!-- Sección de Eventos -->
             <section id="eventosSection" class="section">
-                <div class="section-header">
-                    <h2>📅 EVENTOS / CONCIERTOS</h2>
-                </div>
-
+                <div class="section-header"><h2>📅 EVENTOS / CONCIERTOS</h2></div>
                 <div class="form-section">
                     <h3>PUBLICAR NUEVO EVENTO</h3>
                     <div class="form-group-row">
-                        <input type="text" id="eventoNombre" placeholder="Nombre del evento" class="form-input">
+                        <input type="text" id="eventoNombre" placeholder="Evento" class="form-input">
                         <input type="date" id="eventoFecha" class="form-input">
-                        <input type="text" id="eventoLugar" placeholder="Lugar / Ciudad" class="form-input">
+                        <input type="text" id="eventoLugar" placeholder="Lugar" class="form-input">
                         <button onclick="agregarEvento()" class="btn-add">⚡ PUBLICAR</button>
                     </div>
                 </div>
-
-                <div id="eventosContainer" class="items-container">
-                    <p class="empty-message">No hay eventos próximos. ¡Mantente atento!</p>
-                </div>
+                <div id="eventosContainer" class="items-container"></div>
             </section>
         </main>
+    </div>
+
+    <div id="modalEdicion" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ MODIFICAR REGISTRO</h2>
+                <span class="close-btn" onclick="cerrarModal()">&times;</span>
+            </div>
+            <form id="formEdicion">
+                <input type="hidden" id="editId">
+                <input type="hidden" id="editType">
+                <div id="modalInputs" class="form-group-column"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="cerrarModal()">CANCELAR</button>
+                    <button type="submit" class="btn-save">💾 GUARDAR CAMBIOS</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="./app.js"></script>

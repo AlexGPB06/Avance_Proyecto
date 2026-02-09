@@ -9,12 +9,9 @@ const registerCard = document.getElementById('registerCard');
 const errorMessage = document.getElementById('errorMessage');
 const registerErrorMessage = document.getElementById('registerErrorMessage');
 
-// Helper para obtener el token
-function getToken() {
-    return localStorage.getItem('token');
-}
+function getToken() { return localStorage.getItem('token'); }
 
-// Alternancia entre login y registro
+// --- LOGIN Y REGISTRO ---
 registerLink?.addEventListener('click', (e) => {
     e.preventDefault();
     loginCard.style.display = 'none';
@@ -27,7 +24,6 @@ loginLink?.addEventListener('click', (e) => {
     loginCard.style.display = 'block';
 });
 
-// Manejar login (CONECTADO A BD)
 loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value;
@@ -39,11 +35,9 @@ loginForm?.addEventListener('submit', async (e) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
-
         const data = await response.json();
 
         if (response.ok) {
-            // Guardamos el token y usuario si el login es exitoso
             localStorage.setItem('token', data.token); 
             localStorage.setItem('currentUser', username);
             window.location.href = 'Pagina_principal.html';
@@ -52,13 +46,11 @@ loginForm?.addEventListener('submit', async (e) => {
             errorMessage.style.display = 'block';
         }
     } catch (error) {
-        console.error(error);
-        errorMessage.textContent = 'Error de conexión con el servidor';
+        errorMessage.textContent = 'Error de conexión';
         errorMessage.style.display = 'block';
     }
 });
 
-// Manejar registro (CONECTADO A BD)
 registerForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('regUsername').value;
@@ -71,14 +63,13 @@ registerForm?.addEventListener('submit', async (e) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password, email })
         });
-
         if (response.ok) {
-            alert('¡Registro exitoso! Ahora inicia sesión.');
+            alert('¡Registro exitoso!');
             registerCard.style.display = 'none';
             loginCard.style.display = 'block';
         } else {
             const data = await response.json();
-            registerErrorMessage.textContent = data.message || 'Error al registrarse';
+            registerErrorMessage.textContent = data.message || 'Error';
             registerErrorMessage.style.display = 'block';
         }
     } catch (error) {
@@ -87,7 +78,7 @@ registerForm?.addEventListener('submit', async (e) => {
     }
 });
 
-// ============ MANEJO DE PÁGINA PRINCIPAL ============
+// ============ PÁGINA PRINCIPAL ============
 
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('userDisplay')) {
@@ -98,22 +89,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function verificarAutenticacion() {
     const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) {
-        window.location.href = 'index.html';
-        return;
-    }
+    if (!currentUser) { window.location.href = 'index.html'; return; }
     document.getElementById('userDisplay').textContent = `👤 ${currentUser.toUpperCase()}`;
 }
 
-function logoutUsuario() {
-    localStorage.clear(); // Borra todo (usuario y token)
+document.getElementById('logoutBtn')?.addEventListener('click', () => {
+    localStorage.clear();
     window.location.href = 'index.html';
-}
-
-document.getElementById('logoutBtn')?.addEventListener('click', logoutUsuario);
+});
 
 function inicializarPaginaPrincipal() {
-    // Lógica de pestañas (Menú lateral)
     const menuBtns = document.querySelectorAll('.menu-btn');
     const sections = document.querySelectorAll('.section');
 
@@ -122,12 +107,10 @@ function inicializarPaginaPrincipal() {
             menuBtns.forEach(b => b.classList.remove('active'));
             sections.forEach(s => s.classList.remove('active'));
             btn.classList.add('active');
-            const sectionId = btn.getAttribute('data-section') + 'Section';
-            document.getElementById(sectionId).classList.add('active');
+            document.getElementById(btn.getAttribute('data-section') + 'Section').classList.add('active');
         });
     });
 
-    // Cargar datos reales desde MySQL
     cargarCanciones();
     cargarFans();
     cargarTareas();
@@ -135,115 +118,83 @@ function inicializarPaginaPrincipal() {
 }
 
 // --- GESTIÓN DE CANCIONES ---
-
 async function agregarCancion() {
     const titulo = document.getElementById('cancionTitulo').value.trim();
     const artista = document.getElementById('cancionArtista').value.trim();
     const genero = document.getElementById('cancionGenero').value.trim();
-
     if (!titulo || !artista) return alert('⚠️ Faltan datos');
 
-    const token = getToken();
-
-    const response = await fetch(`${API_URL}/canciones`, {
+    await fetch(`${API_URL}/canciones`, {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // TOKEN AÑADIDO
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
         body: JSON.stringify({ titulo, artista, genero })
     });
-
-    if (response.ok) {
-        // Limpiar y recargar
-        document.getElementById('cancionTitulo').value = '';
-        document.getElementById('cancionArtista').value = '';
-        document.getElementById('cancionGenero').value = '';
-        cargarCanciones();
-    } else {
-        alert("Error al agregar (¿Sesión expirada?)");
-    }
+    document.getElementById('cancionTitulo').value = '';
+    document.getElementById('cancionArtista').value = '';
+    cargarCanciones();
 }
 
 async function cargarCanciones() {
     try {
-        const response = await fetch(`${API_URL}/canciones`);
-        const canciones = await response.json();
+        const res = await fetch(`${API_URL}/canciones`);
+        const canciones = await res.json();
         const container = document.getElementById('cancionesContainer');
-
-        if (canciones.length === 0) {
-            container.innerHTML = '<p class="empty-message">No hay canciones en la BD.</p>';
-            return;
-        }
+        if (!canciones.length) { container.innerHTML = '<p class="empty-message">No hay canciones.</p>'; return; }
 
         container.innerHTML = canciones.map(c => `
             <div class="item-card cancion-card">
                 <div class="item-header">
                     <h3>🎵 ${c.titulo.toUpperCase()}</h3>
-                    <button class="btn-delete" onclick="eliminarCancion(${c.id})">🗑️</button>
+                    <div>
+                        <button class="btn-edit" onclick='prepararEdicion("cancion", ${JSON.stringify(c)})'>✏️</button>
+                        <button class="btn-delete" onclick="eliminarCancion(${c.id})">🗑️</button>
+                    </div>
                 </div>
                 <p><strong>ARTISTA:</strong> ${c.artista.toUpperCase()}</p>
                 <p><strong>GÉNERO:</strong> ${(c.genero || '---').toUpperCase()}</p>
             </div>
         `).join('');
-    } catch (error) {
-        console.error("Error cargando canciones:", error);
-    }
+    } catch (e) { console.error(e); }
 }
 
 async function eliminarCancion(id) {
-    if (confirm('¿Eliminar canción?')) {
-        const token = getToken();
-        await fetch(`${API_URL}/canciones/${id}`, { 
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` } // TOKEN AÑADIDO
-        });
+    if (confirm('¿Eliminar?')) {
+        await fetch(`${API_URL}/canciones/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
         cargarCanciones();
     }
 }
 
 // --- GESTIÓN DE FANS ---
-
 async function agregarUsuario() {
     const nombre = document.getElementById('usuarioNombre').value.trim();
     const email = document.getElementById('usuarioEmail').value.trim();
     const pais = document.getElementById('usuarioPais').value.trim();
-
     if (!nombre) return alert('Nombre obligatorio');
-
-    const token = getToken();
 
     await fetch(`${API_URL}/fans`, {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
         body: JSON.stringify({ nombre, email, pais })
     });
-
     document.getElementById('usuarioNombre').value = '';
-    document.getElementById('usuarioEmail').value = '';
-    document.getElementById('usuarioPais').value = '';
     cargarFans();
 }
 
 async function cargarFans() {
     try {
-        const response = await fetch(`${API_URL}/fans`);
-        const fans = await response.json();
+        const res = await fetch(`${API_URL}/fans`);
+        const fans = await res.json();
         const container = document.getElementById('usuariosContainer');
-
-        if (fans.length === 0) {
-            container.innerHTML = '<p class="empty-message">No hay fans registrados.</p>';
-            return;
-        }
+        if (!fans.length) { container.innerHTML = '<p class="empty-message">No hay fans.</p>'; return; }
 
         container.innerHTML = fans.map(f => `
             <div class="item-card usuario-card">
                 <div class="item-header">
                     <h3>👥 ${f.nombre.toUpperCase()}</h3>
-                    <button class="btn-delete" onclick="eliminarFan(${f.id})">🗑️</button>
+                    <div>
+                        <button class="btn-edit" onclick='prepararEdicion("fan", ${JSON.stringify(f)})'>✏️</button>
+                        <button class="btn-delete" onclick="eliminarFan(${f.id})">🗑️</button>
+                    </div>
                 </div>
                 <p><strong>EMAIL:</strong> ${f.email || '---'}</p>
                 <p><strong>PAÍS:</strong> ${(f.pais || '---').toUpperCase()}</p>
@@ -253,67 +204,50 @@ async function cargarFans() {
 }
 
 async function eliminarFan(id) {
-    if (confirm('¿Eliminar fan?')) {
-        const token = getToken();
-        await fetch(`${API_URL}/fans/${id}`, { 
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+    if (confirm('¿Eliminar?')) {
+        await fetch(`${API_URL}/fans/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
         cargarFans();
     }
 }
 
 // --- GESTIÓN DE TAREAS ---
-
 async function agregarTarea() {
     const titulo = document.getElementById('tareaTitulo').value.trim();
     const descripcion = document.getElementById('tareaDescripcion').value.trim();
     const prioridad = document.getElementById('tareaPrioridad').value;
-
     if (!titulo) return alert('Título requerido');
-
-    const token = getToken();
 
     await fetch(`${API_URL}/tareas`, {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
         body: JSON.stringify({ titulo, descripcion, prioridad })
     });
-
     document.getElementById('tareaTitulo').value = '';
-    document.getElementById('tareaDescripcion').value = '';
     cargarTareas();
 }
 
 async function cargarTareas() {
     try {
-        const response = await fetch(`${API_URL}/tareas`);
-        const tareas = await response.json();
+        const res = await fetch(`${API_URL}/tareas`);
+        const tareas = await res.json();
         const container = document.getElementById('tareasContainer');
-
-        if (tareas.length === 0) {
-            container.innerHTML = '<p class="empty-message">Sin tareas pendientes.</p>';
-            return;
-        }
+        if (!tareas.length) { container.innerHTML = '<p class="empty-message">Sin tareas.</p>'; return; }
 
         container.innerHTML = tareas.map(t => `
             <div class="item-card tarea-card ${t.completada ? 'completada' : ''}">
                 <div class="item-header">
                     <h3>
-                        <input type="checkbox" ${t.completada ? 'checked' : ''} 
-                               onchange="toggleTarea(${t.id}, ${!t.completada})">
+                        <input type="checkbox" ${t.completada ? 'checked' : ''} onchange="toggleTarea(${t.id}, ${!t.completada})">
                         ${t.titulo.toUpperCase()}
                     </h3>
-                    <button class="btn-delete" onclick="eliminarTarea(${t.id})">🗑️</button>
+                    <div>
+                        <button class="btn-edit" onclick='prepararEdicion("tarea", ${JSON.stringify(t)})'>✏️</button>
+                        <button class="btn-delete" onclick="eliminarTarea(${t.id})">🗑️</button>
+                    </div>
                 </div>
                 <p>${(t.descripcion || '').toUpperCase()}</p>
                 <div class="tarea-footer">
-                    <span class="prioridad-${t.prioridad}">
-                        ${t.prioridad === 'baja' ? ' BAJA' : t.prioridad === 'media' ? 'MEDIA' : 'ALTA'}
-                    </span>
+                    <span class="prioridad-${t.prioridad}">${t.prioridad.toUpperCase()}</span>
                 </div>
             </div>
         `).join('');
@@ -321,72 +255,52 @@ async function cargarTareas() {
 }
 
 async function toggleTarea(id, nuevoEstado) {
-    const token = getToken();
-    // Enviamos el nuevo estado con Token
     await fetch(`${API_URL}/tareas/${id}`, {
         method: 'PUT',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
         body: JSON.stringify({ completada: nuevoEstado })
     });
     cargarTareas();
 }
 
 async function eliminarTarea(id) {
-    if (confirm('¿Eliminar tarea?')) {
-        const token = getToken();
-        await fetch(`${API_URL}/tareas/${id}`, { 
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+    if (confirm('¿Eliminar?')) {
+        await fetch(`${API_URL}/tareas/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
         cargarTareas();
     }
 }
 
 // --- GESTIÓN DE EVENTOS ---
-
 async function agregarEvento() {
     const nombre = document.getElementById('eventoNombre').value.trim();
     const fecha = document.getElementById('eventoFecha').value;
     const lugar = document.getElementById('eventoLugar').value.trim();
-
     if (!nombre || !fecha) return alert('Datos incompletos');
-
-    const token = getToken();
 
     await fetch(`${API_URL}/eventos`, {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
         body: JSON.stringify({ nombre, fecha, lugar })
     });
-
     document.getElementById('eventoNombre').value = '';
-    document.getElementById('eventoFecha').value = '';
-    document.getElementById('eventoLugar').value = '';
     cargarEventos();
 }
 
 async function cargarEventos() {
     try {
-        const response = await fetch(`${API_URL}/eventos`);
-        const eventos = await response.json();
+        const res = await fetch(`${API_URL}/eventos`);
+        const eventos = await res.json();
         const container = document.getElementById('eventosContainer');
-
-        if (eventos.length === 0) {
-            container.innerHTML = '<p class="empty-message">No hay eventos.</p>';
-            return;
-        }
+        if (!eventos.length) { container.innerHTML = '<p class="empty-message">No hay eventos.</p>'; return; }
 
         container.innerHTML = eventos.map(e => `
             <div class="item-card evento-card">
                 <div class="item-header">
                     <h3>📅 ${e.nombre.toUpperCase()}</h3>
-                    <button class="btn-delete" onclick="eliminarEvento(${e.id})">🗑️</button>
+                    <div>
+                        <button class="btn-edit" onclick='prepararEdicion("evento", ${JSON.stringify(e)})'>✏️</button>
+                        <button class="btn-delete" onclick="eliminarEvento(${e.id})">🗑️</button>
+                    </div>
                 </div>
                 <p><strong>FECHA:</strong> ${new Date(e.fecha).toLocaleDateString()}</p>
                 <p><strong>LUGAR:</strong> ${(e.lugar || '---').toUpperCase()}</p>
@@ -396,12 +310,91 @@ async function cargarEventos() {
 }
 
 async function eliminarEvento(id) {
-    if (confirm('¿Eliminar evento?')) {
-        const token = getToken();
-        await fetch(`${API_URL}/eventos/${id}`, { 
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+    if (confirm('¿Eliminar?')) {
+        await fetch(`${API_URL}/eventos/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
         cargarEventos();
     }
 }
+
+// ============ LÓGICA DE EDICIÓN (MODAL) ============
+const modal = document.getElementById('modalEdicion');
+const modalInputs = document.getElementById('modalInputs');
+
+function prepararEdicion(tipo, dato) {
+    document.getElementById('editId').value = dato.id;
+    document.getElementById('editType').value = tipo;
+    modalInputs.innerHTML = ''; 
+
+    if (tipo === 'cancion') {
+        modalInputs.innerHTML = `
+            <label>Título:</label><input type="text" id="editTitulo" class="form-input" value="${dato.titulo}">
+            <label>Artista:</label><input type="text" id="editArtista" class="form-input" value="${dato.artista}">
+            <label>Género:</label><input type="text" id="editGenero" class="form-input" value="${dato.genero || ''}">
+        `;
+    } else if (tipo === 'fan') {
+        modalInputs.innerHTML = `
+            <label>Nombre:</label><input type="text" id="editNombre" class="form-input" value="${dato.nombre}">
+            <label>Email:</label><input type="email" id="editEmail" class="form-input" value="${dato.email || ''}">
+            <label>País:</label><input type="text" id="editPais" class="form-input" value="${dato.pais || ''}">
+        `;
+    } else if (tipo === 'tarea') {
+        modalInputs.innerHTML = `
+            <label>Título:</label><input type="text" id="editTitulo" class="form-input" value="${dato.titulo}">
+            <label>Descripción:</label><input type="text" id="editDescripcion" class="form-input" value="${dato.descripcion || ''}">
+            <label>Prioridad:</label>
+            <select id="editPrioridad" class="form-input">
+                <option value="baja" ${dato.prioridad === 'baja' ? 'selected' : ''}>BAJA</option>
+                <option value="media" ${dato.prioridad === 'media' ? 'selected' : ''}>MEDIA</option>
+                <option value="alta" ${dato.prioridad === 'alta' ? 'selected' : ''}>ALTA</option>
+            </select>
+        `;
+    } else if (tipo === 'evento') {
+        const fechaFormat = new Date(dato.fecha).toISOString().split('T')[0];
+        modalInputs.innerHTML = `
+            <label>Nombre:</label><input type="text" id="editNombre" class="form-input" value="${dato.nombre}">
+            <label>Fecha:</label><input type="date" id="editFecha" class="form-input" value="${fechaFormat}">
+            <label>Lugar:</label><input type="text" id="editLugar" class="form-input" value="${dato.lugar || ''}">
+        `;
+    }
+    modal.style.display = 'block';
+}
+
+function cerrarModal() { modal.style.display = 'none'; }
+window.onclick = function(e) { if (e.target == modal) cerrarModal(); }
+
+document.getElementById('formEdicion').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editId').value;
+    const tipo = document.getElementById('editType').value;
+    let url = '', body = {};
+
+    if (tipo === 'cancion') {
+        url = `${API_URL}/canciones/${id}`;
+        body = { titulo: document.getElementById('editTitulo').value, artista: document.getElementById('editArtista').value, genero: document.getElementById('editGenero').value };
+    } else if (tipo === 'fan') {
+        url = `${API_URL}/fans/${id}`;
+        body = { nombre: document.getElementById('editNombre').value, email: document.getElementById('editEmail').value, pais: document.getElementById('editPais').value };
+    } else if (tipo === 'tarea') {
+        url = `${API_URL}/tareas/editar/${id}`;
+        body = { titulo: document.getElementById('editTitulo').value, descripcion: document.getElementById('editDescripcion').value, prioridad: document.getElementById('editPrioridad').value };
+    } else if (tipo === 'evento') {
+        url = `${API_URL}/eventos/${id}`;
+        body = { nombre: document.getElementById('editNombre').value, fecha: document.getElementById('editFecha').value, lugar: document.getElementById('editLugar').value };
+    }
+
+    try {
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+            body: JSON.stringify(body)
+        });
+        if (res.ok) {
+            alert('¡Modificado con éxito!');
+            cerrarModal();
+            if (tipo === 'cancion') cargarCanciones();
+            if (tipo === 'fan') cargarFans();
+            if (tipo === 'tarea') cargarTareas();
+            if (tipo === 'evento') cargarEventos();
+        } else { alert('Error al modificar.'); }
+    } catch (error) { alert('Error de conexión'); }
+});
