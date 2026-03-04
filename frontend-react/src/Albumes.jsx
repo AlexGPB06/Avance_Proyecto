@@ -4,168 +4,184 @@ import InteraccionesModal from './InteraccionesModal';
 
 const API_URL = 'http://localhost:3000/api';
 
-function Albumes({ userRol }) {
+function Albumes({ userRol, irAPerfil }) {
   const [data, setData] = useState([]);
-  const [newItem, setNewItem] = useState({ titulo: '', descripcion: '', prioridad: 'baja' });
-  const [editingItem, setEditingItem] = useState(null);
-  const [itemInteraccion, setItemInteraccion] = useState(null);
+  const [newItem, setNewItem] = useState({ 
+      titulo: '', 
+      descripcion: '', 
+      prioridad: 'Alta' 
+  });
+  const [modalItem, setModalItem] = useState(null);
 
   const token = localStorage.getItem('token');
-  const authAxios = axios.create({
-    baseURL: API_URL,
-    headers: { Authorization: `Bearer ${token}` }
+  const authAxios = axios.create({ 
+      baseURL: API_URL, 
+      headers: { Authorization: `Bearer ${token}` } 
   });
 
-  useEffect(() => {
-    cargarDatos();
+  useEffect(() => { 
+      cargarDatos(); 
   }, []);
 
   const cargarDatos = async () => {
-    try {
-      const res = await authAxios.get('/tareas'); // En el backend son "tareas"
-      setData(res.data);
+    try { 
+        const res = await authAxios.get('/tareas'); 
+        setData(res.data); 
     } catch (error) {
-      console.error("Error cargando álbumes", error);
+        console.error("Error al cargar los álbumes", error);
     }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    try {
-      await authAxios.post('/tareas', newItem);
-      setNewItem({ titulo: '', descripcion: '', prioridad: 'baja' });
-      cargarDatos();
-      alert('⚡ ÁLBUM AGREGADO CON ÉXITO');
-    } catch (error) {
-      alert('Error al agregar el álbum');
+    if (!newItem.titulo.trim() || !newItem.descripcion.trim()) {
+        alert("Por favor llena los campos obligatorios.");
+        return;
+    }
+
+    try { 
+        await authAxios.post('/tareas', newItem); 
+        setNewItem({ 
+            titulo: '', 
+            descripcion: '', 
+            prioridad: 'Alta' 
+        }); 
+        cargarDatos(); 
+        alert("Álbum agregado. Para ver su portada, guarda una foto en public/img/ como album_ID.jpg");
+    } catch (error) { 
+        alert('Error al agregar: ' + (error.response?.data?.message || error.message)); 
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿ELIMINAR ESTE ÁLBUM?')) return;
-    try {
-      await authAxios.delete(`/tareas/${id}`);
-      cargarDatos();
-    } catch (error) {
-      alert('Error al eliminar: Privilegios insuficientes');
+    if (!window.confirm('¿ESTÁS SEGURO DE ELIMINAR ESTE ÁLBUM?')) {
+        return;
     }
-  };
 
-  const handleEdit = async (e) => {
-    e.preventDefault();
-    try {
-      await authAxios.put(`/tareas/editar/${editingItem.id}`, editingItem);
-      setEditingItem(null);
-      cargarDatos();
-      alert('💾 CAMBIOS GUARDADOS');
+    try { 
+        await authAxios.delete(`/tareas/${id}`); 
+        cargarDatos(); 
     } catch (error) {
-      alert('Error al editar: Privilegios insuficientes');
-    }
-  };
-
-  const toggleTarea = async (tarea) => {
-    if (userRol !== 'admin') return; 
-    try {
-      await authAxios.put(`/tareas/${tarea.id}`, { completada: !tarea.completada });
-      cargarDatos();
-    } catch (error) {
-      console.error(error);
+        alert("Error al eliminar el álbum.");
     }
   };
 
   return (
-    <section className="section active">
+    <section className="animate-fade-in section active">
       <div className="section-header">
-        <h2>💿 ÁLBUMES COMPLETADOS</h2>
+          <h2>💿 NUESTROS ÁLBUMES</h2>
       </div>
 
       {userRol === 'admin' && (
-        <div className="form-section">
-          <h3>AGREGAR ÁLBUM</h3>
-          <form onSubmit={handleAdd} className="form-group-row">
-            <input type="text" name="titulo" placeholder="Título del Álbum" className="form-input" value={newItem.titulo} onChange={(e) => setNewItem({...newItem, titulo: e.target.value})} required />
-            <input type="text" name="descripcion" placeholder="Descripción / Reseña" className="form-input" value={newItem.descripcion} onChange={(e) => setNewItem({...newItem, descripcion: e.target.value})} />
-            <select name="prioridad" className="form-input" value={newItem.prioridad} onChange={(e) => setNewItem({...newItem, prioridad: e.target.value})}>
-              <option value="baja">🟢 COMPLETADO</option>
-              <option value="media">🟡 A MEDIAS</option>
-              <option value="alta">🔴 SIN ESCUCHAR</option>
-            </select>
-            <button type="submit" className="btn-add">⚡ AGREGAR</button>
+        <div style={{ 
+            background: 'rgba(20,20,20,0.8)', 
+            padding: '20px', 
+            borderRadius: '12px', 
+            marginBottom: '30px', 
+            border: '1px solid var(--highlight-color)' 
+        }}>
+          <h3 style={{ marginTop: 0, color: 'var(--highlight-color)' }}>
+              AGREGAR NUEVO ÁLBUM (SOLO ADMIN)
+          </h3>
+          <form 
+              onSubmit={handleAdd} 
+              style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 2fr auto', 
+                  gap: '15px', 
+                  alignItems: 'center' 
+              }}
+          >
+            <input 
+                type="text" 
+                placeholder="Nombre del Álbum *" 
+                className="form-input" 
+                style={{ margin: 0 }} 
+                value={newItem.titulo} 
+                onChange={e => setNewItem({...newItem, titulo: e.target.value})} 
+                required 
+            />
+            <input 
+                type="text" 
+                placeholder="Descripción breve *" 
+                className="form-input" 
+                style={{ margin: 0 }} 
+                value={newItem.descripcion} 
+                onChange={e => setNewItem({...newItem, descripcion: e.target.value})} 
+                required 
+            />
+            <button 
+                type="submit" 
+                className="btn-primary" 
+            >
+                ➕ PUBLICAR ÁLBUM
+            </button>
           </form>
         </div>
       )}
 
-      <div className="items-container">
-        {data.length === 0 ? <p className="empty-message">No hay registros aún.</p> : (
-          data.map((item) => (
-            <div key={item.id} className={`item-card tarea-card ${item.completada ? 'completada' : ''}`}>
-              <div className="item-header">
-                <div>
-                  <h3>
-                    <input 
-                      type="checkbox" 
-                      checked={!!item.completada} 
-                      onChange={() => toggleTarea(item)} 
-                      style={{marginRight: '10px'}} 
-                      disabled={userRol !== 'admin'} 
+      <div className="items-grid">
+        {data.length === 0 ? (
+            <p className="empty-message">No hay álbumes publicados aún.</p>
+        ) : (
+            data.map((item, idx) => (
+                <div 
+                    key={item.id} 
+                    className="item-card" 
+                    style={{ animationDelay: `${idx * 0.05}s` }}
+                >
+                  <div style={{ position: 'relative' }}>
+                    {/* IMAGEN LOCAL (CON PLACEHOLDER DE RESPALDO) */}
+                    <img 
+                        src={item.imagen_url || `/img/album_${item.id}.jpg`} 
+                        onError={(e) => { 
+                            e.target.onerror = null; 
+                            e.target.src = '/img/placeholder.png'; 
+                        }}
+                        alt={`Portada de ${item.titulo}`} 
+                        className="card-image" 
+                        style={{ height: '250px' }} 
                     />
-                    {item.titulo}
-                  </h3>
-                  <button 
-                    className="btn-action" 
-                    style={{ background: '#333', color: '#fff', padding: '5px 10px', fontSize: '0.8em', marginTop: '5px', borderRadius: '4px', border: '1px solid var(--highlight-color)' }}
-                    onClick={() => setItemInteraccion(item)}
-                  >
-                    💬 Ver Comunidad
-                  </button>
-                </div>
-                
-                {userRol === 'admin' && (
-                  <div>
-                    <button type="button" className="btn-edit" onClick={() => setEditingItem(item)}>✏️</button>
-                    <button type="button" className="btn-delete" onClick={() => handleDelete(item.id)}>🗑️</button>
+                    
+                    {userRol === 'admin' && (
+                        <button 
+                            className="btn-delete" 
+                            style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }} 
+                            onClick={() => handleDelete(item.id)}
+                        >
+                            🗑️
+                        </button>
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="tarea-footer">
-                <p>{item.descripcion}</p>
-                <span className={`prioridad-${item.prioridad}`}>{item.prioridad?.toUpperCase()}</span>
-              </div>
-            </div>
-          ))
+                  
+                  <div className="card-content">
+                    <h3 className="card-title">{item.titulo}</h3>
+                    <p className="card-subtitle" style={{ color: '#ccc', textTransform: 'none' }}>
+                        {item.descripcion}
+                    </p>
+                    
+                    <div style={{ marginTop: 'auto', display: 'flex', gap: '10px', paddingTop: '15px' }}>
+                      <button 
+                          className="btn-primary" 
+                          style={{ flexGrow: 1 }} 
+                          onClick={() => setModalItem(item)}
+                      >
+                          ⭐ CALIFICAR / 💬 RESEÑAS
+                      </button>
+                    </div>
+                  </div>
+                </div>
+            ))
         )}
       </div>
-
-      {/* MODAL DE EDICIÓN */}
-      {editingItem && (
-        <div className="modal" style={{ display: 'block' }}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>✏️ MODIFICAR ÁLBUM</h2>
-              <span className="close-btn" onClick={() => setEditingItem(null)}>&times;</span>
-            </div>
-            <form onSubmit={handleEdit}>
-              <div className="form-group-column">
-                <input type="text" className="form-input" value={editingItem.titulo} onChange={(e) => setEditingItem({...editingItem, titulo: e.target.value})} required />
-                <input type="text" className="form-input" value={editingItem.descripcion} onChange={(e) => setEditingItem({...editingItem, descripcion: e.target.value})} />
-                <select className="form-input" value={editingItem.prioridad} onChange={(e) => setEditingItem({...editingItem, prioridad: e.target.value})}>
-                  <option value="baja">🟢 COMPLETADO</option>
-                  <option value="media">🟡 A MEDIAS</option>
-                  <option value="alta">🔴 SIN ESCUCHAR</option>
-                </select>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={() => setEditingItem(null)}>CANCELAR</button>
-                <button type="submit" className="btn-save">💾 GUARDAR CAMBIOS</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE COMUNIDAD */}
-      {itemInteraccion && (
-        <InteraccionesModal item={itemInteraccion} tipoEntidad="tarea" onClose={() => setItemInteraccion(null)} />
+      
+      {modalItem && (
+          <InteraccionesModal 
+              item={modalItem} 
+              tipoEntidad="tarea" 
+              onClose={() => setModalItem(null)} 
+              irAPerfil={irAPerfil} 
+          />
       )}
     </section>
   );

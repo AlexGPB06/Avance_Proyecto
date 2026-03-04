@@ -4,134 +4,188 @@ import InteraccionesModal from './InteraccionesModal';
 
 const API_URL = 'http://localhost:3000/api';
 
-function Canciones({ userRol }) {
+function Canciones({ userRol, irAPerfil }) {
   const [data, setData] = useState([]);
-  const [newItem, setNewItem] = useState({ titulo: '', artista: '', genero: '' });
-  const [editingItem, setEditingItem] = useState(null);
-  const [itemInteraccion, setItemInteraccion] = useState(null);
+  const [newItem, setNewItem] = useState({ 
+      titulo: '', 
+      artista: '', 
+      genero: '' 
+  });
+  const [modalItem, setModalItem] = useState(null);
 
   const token = localStorage.getItem('token');
-  const authAxios = axios.create({
-    baseURL: API_URL,
-    headers: { Authorization: `Bearer ${token}` }
+  const authAxios = axios.create({ 
+      baseURL: API_URL, 
+      headers: { Authorization: `Bearer ${token}` } 
   });
 
-  useEffect(() => {
-    cargarDatos();
+  useEffect(() => { 
+      cargarDatos(); 
   }, []);
 
   const cargarDatos = async () => {
-    try {
-      const res = await authAxios.get('/canciones');
-      setData(res.data);
-    } catch (error) {
-      console.error("Error cargando canciones", error);
+    try { 
+        const res = await authAxios.get('/canciones'); 
+        setData(res.data); 
+    } catch (error) { 
+        console.error("Error al cargar las canciones", error); 
     }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    try {
-      await authAxios.post('/canciones', newItem);
-      setNewItem({ titulo: '', artista: '', genero: '' });
-      cargarDatos();
-      alert('⚡ CANCIÓN AGREGADA CON ÉXITO');
-    } catch (error) {
-      alert('Error al agregar: ' + (error.response?.data?.message || error.message));
+    
+    if (!newItem.titulo.trim() || !newItem.artista.trim() || !newItem.genero.trim()) {
+        alert("Por favor llena todos los campos obligatorios.");
+        return;
+    }
+
+    try { 
+        await authAxios.post('/canciones', newItem); 
+        setNewItem({ 
+            titulo: '', 
+            artista: '', 
+            genero: '' 
+        }); 
+        cargarDatos(); 
+        alert("Canción agregada. Para ver su portada, guarda una imagen en la carpeta public/img/ como cancion_ID.jpg");
+    } catch (error) { 
+        alert('Error al agregar: ' + (error.response?.data?.message || error.message)); 
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿ELIMINAR ESTA CANCIÓN?')) return;
-    try {
-      await authAxios.delete(`/canciones/${id}`);
-      cargarDatos();
-    } catch (error) {
-      alert('Error al eliminar: Privilegios insuficientes');
+    if (!window.confirm('¿ESTÁS SEGURO DE ELIMINAR ESTA CANCIÓN? Esta acción no se puede deshacer.')) {
+        return;
     }
-  };
 
-  const handleEdit = async (e) => {
-    e.preventDefault();
-    try {
-      await authAxios.put(`/canciones/${editingItem.id}`, editingItem);
-      setEditingItem(null);
-      cargarDatos();
-      alert('💾 CAMBIOS GUARDADOS');
+    try { 
+        await authAxios.delete(`/canciones/${id}`); 
+        cargarDatos(); 
     } catch (error) {
-      alert('Error al editar: Privilegios insuficientes');
+        alert("Error al eliminar la canción.");
     }
   };
 
   return (
-    <section className="section active">
+    <section className="animate-fade-in section active">
       <div className="section-header">
-        <h2>🎵 CANCIONES FAVORITAS</h2>
+          <h2>🎵 DISCOGRAFÍA OFICIAL</h2>
       </div>
 
       {userRol === 'admin' && (
-        <div className="form-section">
-          <h3>AGREGAR NUEVA CANCIÓN</h3>
-          <form onSubmit={handleAdd} className="form-group-row">
-            <input type="text" name="titulo" placeholder="Título" className="form-input" value={newItem.titulo} onChange={(e) => setNewItem({...newItem, titulo: e.target.value})} required />
-            <input type="text" name="artista" placeholder="Artista" className="form-input" value={newItem.artista} onChange={(e) => setNewItem({...newItem, artista: e.target.value})} required />
-            <input type="text" name="genero" placeholder="Género" className="form-input" value={newItem.genero} onChange={(e) => setNewItem({...newItem, genero: e.target.value})} />
-            <button type="submit" className="btn-add">⚡ AGREGAR</button>
+        <div style={{ 
+            background: 'rgba(20,20,20,0.8)', 
+            padding: '20px', 
+            borderRadius: '12px', 
+            marginBottom: '30px', 
+            border: '1px solid var(--highlight-color)' 
+        }}>
+          <h3 style={{ marginTop: 0, color: 'var(--highlight-color)' }}>
+              AGREGAR NUEVA CANCIÓN (SOLO ADMIN)
+          </h3>
+          <form 
+              onSubmit={handleAdd} 
+              style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr 1fr auto', 
+                  gap: '15px', 
+                  alignItems: 'center' 
+              }}
+          >
+            <input 
+                type="text" 
+                placeholder="Título de la Canción" 
+                className="form-input" 
+                style={{ margin: 0 }} 
+                value={newItem.titulo} 
+                onChange={e => setNewItem({...newItem, titulo: e.target.value})} 
+                required 
+            />
+            <input 
+                type="text" 
+                placeholder="Artista / Banda" 
+                className="form-input" 
+                style={{ margin: 0 }} 
+                value={newItem.artista} 
+                onChange={e => setNewItem({...newItem, artista: e.target.value})} 
+                required 
+            />
+            <input 
+                type="text" 
+                placeholder="Género Musical" 
+                className="form-input" 
+                style={{ margin: 0 }} 
+                value={newItem.genero} 
+                onChange={e => setNewItem({...newItem, genero: e.target.value})} 
+                required 
+            />
+            <button type="submit" className="btn-primary">
+                ➕ AGREGAR
+            </button>
           </form>
         </div>
       )}
 
-      <div className="items-container">
-        {data.length === 0 ? <p className="empty-message">No hay registros aún.</p> : (
-          data.map((item) => (
-            <div key={item.id} className="item-card cancion-card">
-              <div className="item-header">
-                <div>
-                  <h3>{item.titulo}</h3>
-                  <button className="btn-action" style={{ background: '#333', color: '#fff', padding: '5px 10px', fontSize: '0.8em', marginTop: '5px', borderRadius: '4px', border: '1px solid var(--highlight-color)' }} onClick={() => setItemInteraccion(item)}>
-                    💬 Ver Comunidad
-                  </button>
-                </div>
-                {userRol === 'admin' && (
-                  <div>
-                    <button type="button" className="btn-edit" onClick={() => setEditingItem(item)}>✏️</button>
-                    <button type="button" className="btn-delete" onClick={() => handleDelete(item.id)}>🗑️</button>
+      <div className="items-grid">
+        {data.length === 0 ? (
+            <p className="empty-message">No hay canciones publicadas aún.</p>
+        ) : (
+            data.map((item, idx) => (
+                <div 
+                    key={item.id} 
+                    className="item-card" 
+                    style={{ animationDelay: `${idx * 0.05}s` }}
+                >
+                  <div style={{ position: 'relative' }}>
+                    {/* IMAGEN LOCAL (CON PLACEHOLDER DE RESPALDO) */}
+                    <img 
+                        src={item.imagen_url || `/img/cancion_${item.id}.jpg`} 
+                        onError={(e) => { 
+                            e.target.onerror = null; 
+                            e.target.src = '/img/placeholder.png'; 
+                        }}
+                        alt={`Portada de ${item.titulo}`}
+                        className="card-image" 
+                    />
+                    
+                    {userRol === 'admin' && (
+                      <button 
+                          className="btn-delete" 
+                          style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }} 
+                          onClick={() => handleDelete(item.id)}
+                      >
+                          🗑️
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-              <p><strong>ARTISTA:</strong> {item.artista}</p>
-              <p><strong>GÉNERO:</strong> {item.genero}</p>
-            </div>
-          ))
+                  
+                  <div className="card-content">
+                    <h3 className="card-title">{item.titulo}</h3>
+                    <p className="card-subtitle">{item.artista} • {item.genero}</p>
+                    
+                    <div style={{ marginTop: 'auto', display: 'flex', gap: '10px' }}>
+                      <button 
+                          className="btn-primary" 
+                          style={{ flexGrow: 1 }} 
+                          onClick={() => setModalItem(item)}
+                      >
+                          ⭐ CALIFICAR / 💬 OPINAR
+                      </button>
+                    </div>
+                  </div>
+                </div>
+            ))
         )}
       </div>
-
-      {/* MODAL DE EDICIÓN */}
-      {editingItem && (
-        <div className="modal" style={{ display: 'block' }}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>✏️ MODIFICAR CANCIÓN</h2>
-              <span className="close-btn" onClick={() => setEditingItem(null)}>&times;</span>
-            </div>
-            <form onSubmit={handleEdit}>
-              <div className="form-group-column">
-                <input type="text" className="form-input" value={editingItem.titulo} onChange={(e) => setEditingItem({...editingItem, titulo: e.target.value})} required />
-                <input type="text" className="form-input" value={editingItem.artista} onChange={(e) => setEditingItem({...editingItem, artista: e.target.value})} required />
-                <input type="text" className="form-input" value={editingItem.genero} onChange={(e) => setEditingItem({...editingItem, genero: e.target.value})} />
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={() => setEditingItem(null)}>CANCELAR</button>
-                <button type="submit" className="btn-save">💾 GUARDAR CAMBIOS</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE COMUNIDAD */}
-      {itemInteraccion && (
-        <InteraccionesModal item={itemInteraccion} tipoEntidad="cancion" onClose={() => setItemInteraccion(null)} />
+      
+      {modalItem && (
+          <InteraccionesModal 
+              item={modalItem} 
+              tipoEntidad="cancion" 
+              onClose={() => setModalItem(null)} 
+              irAPerfil={irAPerfil} 
+          />
       )}
     </section>
   );
