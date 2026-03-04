@@ -156,7 +156,7 @@ function Inicio({ userRol }) {
             )}
 
             {/* 1. BANNER TOP DESDE CARPETA LOCAL */}
-            <div style={{ position: 'relative', width: '100%', height: '300px', backgroundImage: "url('/img/141109487eecf71695ce3d30be6977ca.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '0 0 8px 8px' }}>
+            <div style={{ position: 'relative', width: '100%', height: '300px', backgroundImage: "url('/img/141109487eecf71695ce3d30be6977ca.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '0 0 8px 8px', filter: 'brightness(0.7)' }}>
                 {/* No hay botones de editar, se edita subiendo el archivo a la carpeta */}
             </div>
 
@@ -280,7 +280,7 @@ function Inicio({ userRol }) {
             )}
 
             {/* 5. BANNER BOTTOM DESDE CARPETA LOCAL */}
-            <div style={{ position: 'relative', width: '100%', height: '200px', backgroundImage: "url('/img/141109487eecf71695ce3d30be6977ca.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', marginTop: '20px' }}>
+            <div style={{ position: 'relative', width: '100%', height: '200px', backgroundImage: "url('/img/141109487eecf71695ce3d30be6977ca.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', marginTop: '20px', filter: 'brightness(0.7)' }}>
                 {/* Igual, sin botones para editar. Se cambia el archivo en la carpeta. */}
             </div>
             

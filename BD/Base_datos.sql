@@ -109,6 +109,7 @@ CREATE TABLE `canciones` (
   `titulo` varchar(100) NOT NULL,
   `artista` varchar(100) NOT NULL,
   `genero` varchar(50) DEFAULT NULL,
+  `imagen_url` varchar(500) DEFAULT NULL,
   `fecha_agregada` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -250,6 +251,7 @@ CREATE TABLE `eventos` (
   `nombre` varchar(100) NOT NULL,
   `fecha` date NOT NULL,
   `lugar` varchar(100) DEFAULT NULL,
+  `imagen_url` varchar(500) DEFAULT NULL,
   `fecha_creacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -515,6 +517,7 @@ CREATE TABLE `tareas` (
   `titulo` varchar(100) NOT NULL,
   `descripcion` text,
   `prioridad` enum('baja','media','alta') DEFAULT 'baja',
+  `imagen_url` varchar(500) DEFAULT NULL,
   `completada` tinyint(1) DEFAULT '0',
   `fecha_creacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

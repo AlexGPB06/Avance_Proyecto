@@ -18,24 +18,13 @@
 
 html, body {
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
     font-family: 'Impact', 'Arial Black', sans-serif;
-    background: url('/img/PDG.jpeg') center/cover no-repeat fixed;
+    background: linear-gradient(rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.92)), url('/img/PDG.jpeg') center/cover no-repeat fixed;
     color: var(--text-color);
     line-height: 1.6;
     text-transform: uppercase;
     letter-spacing: 1px;
-}
-
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: -1;
 }
 
 /* ========== LOGIN Y REGISTRO ========== */
@@ -554,6 +543,20 @@ body::before {
     border-top: 3px solid var(--highlight-color);
 }
 
+.foro-card {
+    border-left: 6px solid #00e5ff !important;
+    border-top: 3px solid var(--highlight-color);
+    background: linear-gradient(to right, rgba(0, 20, 30, 0.95), rgba(0, 0, 0, 0.9));
+}
+
+.foro-card h3 {
+    color: #00e5ff !important;
+}
+
+.foro-card small {
+    color: #aaa;
+}
+
 .empty-message {
     grid-column: 1 / -1;
     text-align: center;
@@ -809,6 +812,7 @@ h1, h2, h3, h4, .btn-primary, .navbar-title, .menu-btn {
 /* Tarjetas (Cards) 3D */
 .item-card {
   background: rgba(25, 25, 25, 0.6);
+  background: rgba(10, 10, 10, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   overflow: hidden;
