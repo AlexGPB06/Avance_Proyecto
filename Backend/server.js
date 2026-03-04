@@ -56,20 +56,16 @@ const verificarAdmin = (req, res, next) => {
 // --- RUTAS DE AUTENTICACIÓN ---
 // REGISTRO DE USUARIOS CON NUEVOS CAMPOS Y VALIDACIÓN ÚNICA
 app.post('/api/register', async (req, res, next) => {
-    // Ahora recibimos los nuevos datos desde el frontend
     const { username, email, password, fecha_nacimiento, sexo } = req.body;
 
     try {
-        // Encriptar la contraseña (asumiendo que usas bcrypt)
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Insertar en la base de datos
         db.execute(
             'INSERT INTO users (username, email, password, rol, fecha_nacimiento, sexo) VALUES (?, ?, ?, "fan", ?, ?)',
             [username, email, hashedPassword, fecha_nacimiento, sexo || 'Prefiero no decirlo'],
             (err, result) => {
                 if (err) {
-                    // ER_DUP_ENTRY es el código de MySQL cuando intentas meter un dato duplicado en un campo UNIQUE
                     if (err.code === 'ER_DUP_ENTRY') {
                         if (err.sqlMessage.includes('username')) {
                             return res.status(400).json({ message: '🚨 Este nombre de usuario ya está ocupado. Elige otro.' });
@@ -78,7 +74,7 @@ app.post('/api/register', async (req, res, next) => {
                             return res.status(400).json({ message: '🚨 Este correo electrónico ya está registrado.' });
                         }
                     }
-                    return next(err); // Si es otro error, lo pasamos al manejador de errores
+                    return next(err); 
                 }
                 res.status(201).json({ message: '¡Cuenta creada exitosamente!' });
             }
@@ -99,22 +95,19 @@ app.post('/api/login', (req, res, next) => {
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(401).json({ error: 'Contraseña incorrecta' });
 
-        // Incluimos el rol dentro del token para validarlo en el backend
         const token = jwt.sign(
             { id: user.id, username: user.username, rol: user.rol }, 
             process.env.JWT_SECRET || 'clave_secreta_para_tokens', 
             { expiresIn: '2h' }
         );
-        // Enviamos el rol en la respuesta para el frontend
         res.json({ message: 'Login exitoso', token, username: user.username, rol: user.rol });
     });
 });
 
 // --- RUTAS CRUD (Lectura, Creación, Borrado y ACTUALIZACIÓN) ---
 
-// 1. CANCIONES (Cumpliendo CRUD 100% de la rúbrica)
+// 1. CANCIONES
 app.get('/api/canciones', (req, res, next) => {
-    // Paginación y Filtros (Convertidos a String para evitar bugs con mysql2)
     let limitValue = parseInt(req.query.limit) || 50; 
     let pageValue = parseInt(req.query.page) || 1;
     let offsetValue = (pageValue - 1) * limitValue;
@@ -128,7 +121,6 @@ app.get('/api/canciones', (req, res, next) => {
         queryParams.push(genero);
     }
 
-    // Usar LIMIT y OFFSET convirtiendo explícitamente a String
     query += ' ORDER BY id DESC LIMIT ? OFFSET ?';
     queryParams.push(limitValue.toString(), offsetValue.toString());
 
@@ -138,7 +130,7 @@ app.get('/api/canciones', (req, res, next) => {
     });
 });
 
-app.get('/api/canciones/:id', (req, res, next) => { // GET por ID
+app.get('/api/canciones/:id', (req, res, next) => { 
     db.execute('SELECT * FROM canciones WHERE id = ?', [req.params.id], (err, rows) => {
         if (err) return next(err);
         if (rows.length === 0) return res.status(404).json({ message: 'Canción no encontrada' });
@@ -169,9 +161,8 @@ app.delete('/api/canciones/:id', verificarToken, verificarAdmin, (req, res, next
     });
 });
 
-// 2. FORO DE DISCUSIÓN (Reemplaza a Fans)
+// 2. FORO DE DISCUSIÓN 
 app.get('/api/foros', verificarToken, (req, res, next) => {
-    // Si es admin, ve TODOS (para poder aprobarlos). Si es fan, ve solo los APROBADOS.
     let query = `
         SELECT f.*, u.username as autor 
         FROM foros f 
@@ -189,9 +180,8 @@ app.get('/api/foros', verificarToken, (req, res, next) => {
     });
 });
 
-// Proponer un nuevo tema (Cualquier usuario logueado)
 app.post('/api/foros', verificarToken, (req, res, next) => {
-    const { titulo, descripcion } = req.body; // AHORA RECIBE LA DESCRIPCIÓN
+    const { titulo, descripcion } = req.body; 
     const user_id = req.user.id;
 
     db.execute('INSERT INTO foros (titulo, descripcion, user_id, estado) VALUES (?, ?, ?, "pendiente")', 
@@ -201,16 +191,14 @@ app.post('/api/foros', verificarToken, (req, res, next) => {
     });
 });
 
-// Aprobar o Rechazar un tema (SOLO ADMIN)
 app.put('/api/foros/:id/estado', verificarToken, verificarAdmin, (req, res, next) => {
-    const { estado } = req.body; // Debe ser 'aprobado' o 'rechazado'
+    const { estado } = req.body; 
     db.execute('UPDATE foros SET estado = ? WHERE id = ?', [estado, req.params.id], (err) => {
         if (err) return next(err);
         res.json({ message: `El tema ha sido ${estado}` });
     });
 });
 
-// Eliminar un tema (SOLO ADMIN)
 app.delete('/api/foros/:id', verificarToken, verificarAdmin, (req, res, next) => {
     db.execute('DELETE FROM foros WHERE id = ?', [req.params.id], (err) => {
         if (err) return next(err);
@@ -297,7 +285,6 @@ app.delete('/api/eventos/:id', verificarToken, verificarAdmin, (req, res, next) 
 
 // --- RUTAS DE INTERACCIÓN (Comentarios y Calificaciones) ---
 
-// Obtener comentarios de una canción o álbum (CORREGIDO: sin foto_perfil)
 app.get('/api/comentarios/:tipo/:id', (req, res, next) => {
     const query = `
         SELECT c.*, u.username 
@@ -312,7 +299,6 @@ app.get('/api/comentarios/:tipo/:id', (req, res, next) => {
     });
 });
 
-// Publicar un comentario
 app.post('/api/comentarios', verificarToken, (req, res, next) => {
     const { entidad_id, tipo_entidad, comentario } = req.body;
     const user_id = req.user.id; 
@@ -327,7 +313,38 @@ app.post('/api/comentarios', verificarToken, (req, res, next) => {
     );
 });
 
-// Obtener el promedio de calificaciones
+// NUEVO: Editar un comentario (Solo el autor)
+app.put('/api/comentarios/:id', verificarToken, (req, res, next) => {
+    const { comentario } = req.body;
+    const userId = req.user.id;
+    db.execute('UPDATE comentarios SET comentario = ? WHERE id = ? AND user_id = ?', 
+    [comentario, req.params.id, userId], (err, result) => {
+        if (err) return next(err);
+        if (result.affectedRows === 0) return res.status(403).json({ message: 'No puedes editar un comentario que no es tuyo' });
+        res.json({ message: 'Comentario actualizado' });
+    });
+});
+
+// NUEVO: Eliminar un comentario (El autor o el Admin)
+app.delete('/api/comentarios/:id', verificarToken, (req, res, next) => {
+    const userId = req.user.id;
+    const userRol = req.user.rol;
+    
+    let query = 'DELETE FROM comentarios WHERE id = ?';
+    let params = [req.params.id];
+
+    if (userRol !== 'admin') {
+        query += ' AND user_id = ?';
+        params.push(userId);
+    }
+
+    db.execute(query, params, (err, result) => {
+        if (err) return next(err);
+        if (result.affectedRows === 0) return res.status(403).json({ message: 'No tienes permisos para borrar este comentario' });
+        res.json({ message: 'Comentario eliminado' });
+    });
+});
+
 app.get('/api/calificaciones/:tipo/:id', (req, res, next) => {
     const query = 'SELECT AVG(puntuacion) as promedio, COUNT(id) as total FROM calificaciones WHERE tipo_entidad = ? AND entidad_id = ?';
     db.execute(query, [req.params.tipo, req.params.id], (err, rows) => {
@@ -336,7 +353,6 @@ app.get('/api/calificaciones/:tipo/:id', (req, res, next) => {
     });
 });
 
-// Enviar o actualizar una calificación (1 a 5)
 app.post('/api/calificaciones', verificarToken, (req, res, next) => {
     const { entidad_id, tipo_entidad, puntuacion } = req.body;
     const user_id = req.user.id;
@@ -354,22 +370,18 @@ app.post('/api/calificaciones', verificarToken, (req, res, next) => {
 
 // --- RUTAS DE MI PERFIL ---
 
-// Obtener todos los datos del perfil (Usuario, Foros y Favoritos)
 app.get('/api/perfil', verificarToken, (req, res, next) => {
     const userId = req.user.id;
     
-    // 1. Traemos los datos del usuario
     db.execute('SELECT username, email, rol, descripcion, fecha_registro FROM users WHERE id = ?', [userId], (err, userRows) => {
         if (err) return next(err);
         if (userRows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
         
         const userData = userRows[0];
 
-        // 2. Traemos los foros creados por este usuario
         db.execute('SELECT * FROM foros WHERE user_id = ? ORDER BY fecha_creacion DESC', [userId], (err, forosRows) => {
             if (err) return next(err);
             
-            // 3. Traemos sus "Favoritos" (Canciones y Álbumes que ha calificado con 4 o 5 estrellas)
             const queryFavoritos = `
                 SELECT c.id, c.titulo, c.artista as subtitulo, cal.puntuacion, 'cancion' as tipo 
                 FROM canciones c 
@@ -386,7 +398,6 @@ app.get('/api/perfil', verificarToken, (req, res, next) => {
             db.execute(queryFavoritos, [userId, userId], (err, favoritosRows) => {
                 if (err) return next(err);
                 
-                // Enviamos todo empaquetado al frontend
                 res.json({
                     usuario: userData,
                     foros: forosRows,
@@ -397,7 +408,6 @@ app.get('/api/perfil', verificarToken, (req, res, next) => {
     });
 });
 
-// Actualizar la descripción/biografía del usuario
 app.put('/api/perfil/descripcion', verificarToken, (req, res, next) => {
     const { descripcion } = req.body;
     db.execute('UPDATE users SET descripcion = ? WHERE id = ?', [descripcion, req.user.id], (err) => {

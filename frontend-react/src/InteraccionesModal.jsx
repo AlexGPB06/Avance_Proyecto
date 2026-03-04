@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import './Css/styles.css';
 
 const API_URL = 'http://localhost:3000/api';
 
@@ -8,33 +7,69 @@ function InteraccionesModal({ item, tipoEntidad, onClose }) {
     const [comentarios, setComentarios] = useState([]);
     const [nuevoComentario, setNuevoComentario] = useState('');
     const [calificacion, setCalificacion] = useState({ promedio: 0, total: 0 });
+    const [inputCalificacion, setInputCalificacion] = useState('');
 
+    // Estados de edición
+    const [editandoId, setEditandoId] = useState(null);
+    const [textoEditado, setTextoEditado] = useState('');
+
+    const currentUser = localStorage.getItem('currentUser')?.toUpperCase() || '';
+    const userRol = localStorage.getItem('userRol') || 'fan';
     const token = localStorage.getItem('token');
+
     const authAxios = axios.create({
         baseURL: API_URL,
         headers: { Authorization: `Bearer ${token}` }
     });
 
     useEffect(() => {
-        cargarComentarios();
-        cargarCalificacion();
-    }, []);
+        if (item && item.id) {
+            cargarComentarios();
+            cargarCalificacion();
+        }
+    }, [item, tipoEntidad]);
 
     const cargarComentarios = async () => {
         try {
-            const res = await authAxios.get(`/comentarios/${tipoEntidad}/${item.id}`);
-            setComentarios(res.data);
+            // El "?t=" evita el bug del caché que hacía que los comentarios "desaparecieran"
+            const res = await authAxios.get(`/comentarios/${tipoEntidad}/${item.id}?t=${new Date().getTime()}`);
+            setComentarios(res.data); // Ya viene ordenado de Nuevos a Viejos desde tu Backend
         } catch (error) { console.error("Error al cargar comentarios", error); }
     };
 
     const cargarCalificacion = async () => {
         try {
-            const res = await authAxios.get(`/calificaciones/${tipoEntidad}/${item.id}`);
+            const res = await authAxios.get(`/calificaciones/${tipoEntidad}/${item.id}?t=${new Date().getTime()}`);
             setCalificacion({
                 promedio: parseFloat(res.data.promedio || 0).toFixed(1),
                 total: res.data.total
             });
         } catch (error) { console.error("Error al cargar calificación", error); }
+    };
+
+    const handleCalificar = async (e) => {
+        e.preventDefault();
+        try {
+            const valorNumerico = parseFloat(inputCalificacion);
+            if (isNaN(valorNumerico)) throw new Error("Ingresa un número.");
+            
+            const valoresPermitidos = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+            if (!valoresPermitidos.includes(valorNumerico)) {
+                throw new Error("Solo valores exactos (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5).");
+            }
+
+            await authAxios.post('/calificaciones', {
+                entidad_id: item.id,
+                tipo_entidad: tipoEntidad,
+                puntuacion: valorNumerico
+            });
+            
+            cargarCalificacion();
+            setInputCalificacion('');
+            alert(`¡Calificación de ${valorNumerico} guardada!`);
+        } catch (error) {
+            alert(error.message || 'Error al calificar');
+        }
     };
 
     const handleComentar = async (e) => {
@@ -47,67 +82,118 @@ function InteraccionesModal({ item, tipoEntidad, onClose }) {
                 comentario: nuevoComentario
             });
             setNuevoComentario('');
-            cargarComentarios(); // Recargar la lista
+            cargarComentarios();
         } catch (error) { alert('Error al comentar'); }
     };
 
-    const handleCalificar = async (puntos) => {
+    const handleBorrarComentario = async (id) => {
+        if (!window.confirm('¿Borrar este comentario permanentemente?')) return;
         try {
-            await authAxios.post('/calificaciones', {
-                entidad_id: item.id,
-                tipo_entidad: tipoEntidad,
-                puntuacion: puntos
-            });
-            cargarCalificacion(); // Recargar promedio
-        } catch (error) { alert('Error al calificar'); }
+            await authAxios.delete(`/comentarios/${id}`);
+            cargarComentarios();
+        } catch (error) {
+            alert('Error al borrar: Privilegios insuficientes');
+        }
+    };
+
+    const iniciarEdicion = (c) => {
+        setEditandoId(c.id);
+        setTextoEditado(c.comentario);
+    };
+
+    const handleGuardarEdicion = async (id) => {
+        if (!textoEditado.trim()) return;
+        try {
+            await authAxios.put(`/comentarios/${id}`, { comentario: textoEditado });
+            setEditandoId(null);
+            cargarComentarios();
+        } catch (error) { alert('Error al editar'); }
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content" style={{ maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' }}>
-                <div className="modal-header">
-                    <h2>💬 {item.titulo}</h2>
-                    <span className="close-btn" onClick={onClose}>&times;</span>
-                </div>
-                
-                    {/* Solo mostramos la sección de estrellas si NO es un foro */}
-                    {tipoEntidad !== 'foro' && (
-                        <div className="calificacion-section" style={{ textAlign: 'center', marginBottom: '20px' }}>
-                            <h3>⭐ Promedio: {calificacion.promedio} <small>({calificacion.total} votos)</small></h3>
-                            <p>Tu calificación:</p>
-                            <div style={{ fontSize: '2em', cursor: 'pointer' }}>
-                                {[1, 2, 3, 4, 5].map(num => (
-                                    <span key={num} onClick={() => handleCalificar(num)}>★</span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-  
-
-                <div className="comentarios-lista" style={{ background: '#000', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-                    {comentarios.length === 0 ? <p>No hay comentarios aún. ¡Sé el primero!</p> : null}
-                    {comentarios.map(c => (
-                        <div key={c.id} style={{ borderBottom: '1px solid #333', paddingBottom: '10px', marginBottom: '10px' }}>
-                            <strong style={{ color: 'var(--highlight-color)' }}>{c.username}</strong>
-                            <span style={{ fontSize: '0.8em', color: '#888', marginLeft: '10px' }}>
-                                {new Date(c.fecha_creacion).toLocaleDateString()}
-                            </span>
-                            <p style={{ margin: '5px 0' }}>{c.comentario}</p>
-                        </div>
-                    ))}
+        <div style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
+        }}>
+            <div style={{
+                backgroundColor: '#111', border: '3px solid var(--highlight-color, red)', borderRadius: '8px',
+                width: '90%', maxWidth: '600px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '20px',
+                boxShadow: '0 0 30px rgba(0,0,0,0.9)', position: 'relative'
+            }}>
+                {/* HEADER CON BOTON X (POP-UP) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333', paddingBottom: '10px', marginBottom: '15px' }}>
+                    <h2 style={{ margin: 0, color: '#fff', fontSize: '1.5em' }}>💬 {item.titulo || item.nombre}</h2>
+                    <button onClick={onClose} style={{
+                        background: 'none', border: 'none', color: '#fff', fontSize: '2em', cursor: 'pointer', fontWeight: 'bold', lineHeight: '1'
+                    }}>&times;</button>
                 </div>
 
-                <form onSubmit={handleComentar} style={{ display: 'flex', gap: '10px' }}>
+                {/* SECCIÓN DE CALIFICACIÓN */}
+                {tipoEntidad !== 'foro' && (
+                    <div style={{ textAlign: 'center', background: '#0a0a0a', padding: '15px', borderRadius: '8px', border: '1px solid #333', marginBottom: '15px' }}>
+                        <h3 style={{ margin: '0 0 10px 0', color: 'gold' }}>⭐ Promedio: {calificacion.promedio} <small style={{color:'#888', fontSize: '0.7em'}}>({calificacion.total} votos)</small></h3>
+                        <form onSubmit={handleCalificar} style={{ display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
+                            <input 
+                                type="number" step="0.5" 
+                                placeholder="Ej: 4.5" value={inputCalificacion} onChange={(e) => setInputCalificacion(e.target.value)}
+                                style={{ width: '80px', padding: '8px', backgroundColor: '#222', color: '#fff', border: '1px solid #444', borderRadius: '4px' }} required
+                            />
+                            <button type="submit" style={{ padding: '8px 15px', background: '#333', color: '#fff', border: '1px solid gold', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>VOTAR</button>
+                        </form>
+                    </div>
+                )}
+
+                {/* FORMULARIO PARA NUEVO COMENTARIO (Pegado arriba para inmediatez) */}
+                <form onSubmit={handleComentar} style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                     <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Escribe un comentario..." 
-                        value={nuevoComentario} 
-                        onChange={(e) => setNuevoComentario(e.target.value)} 
-                        required 
+                        type="text" placeholder="Escribe tu comentario aquí..." value={nuevoComentario} onChange={(e) => setNuevoComentario(e.target.value)} 
+                        style={{ flexGrow: 1, padding: '10px', backgroundColor: '#222', color: '#fff', border: '1px solid #444', borderRadius: '4px' }} required 
                     />
-                    <button type="submit" className="btn-add">ENVIAR</button>
+                    <button type="submit" style={{ padding: '10px 15px', background: 'var(--highlight-color, red)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>PUBLICAR</button>
                 </form>
+
+                {/* LISTA DE COMENTARIOS (Nuevos hasta arriba) */}
+                <div style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '10px' }}>
+                    {comentarios.length === 0 && <p style={{ textAlign: 'center', color: '#888', marginTop: '20px' }}>Aún no hay comentarios. ¡Sé el primero!</p>}
+                    
+                    {comentarios.map(c => {
+                        const esMiComentario = c.username.toUpperCase() === currentUser;
+                        const puedeBorrar = esMiComentario || userRol === 'admin';
+
+                        return (
+                            <div key={c.id} style={{ background: '#1a1a1a', padding: '15px', borderRadius: '6px', marginBottom: '10px', borderLeft: '4px solid #444' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <div>
+                                        <strong style={{ color: esMiComentario ? '#4ade80' : '#3b82f6' }}>{c.username} {esMiComentario && '(Tú)'}</strong>
+                                        <span style={{ fontSize: '0.8em', color: '#666', marginLeft: '10px' }}>{new Date(c.fecha_creacion).toLocaleString()}</span>
+                                    </div>
+                                    <div>
+                                        {esMiComentario && editandoId !== c.id && (
+                                            <button onClick={() => iniciarEdicion(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}>✏️</button>
+                                        )}
+                                        {puedeBorrar && (
+                                            <button onClick={() => handleBorrarComentario(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2em' }}>🗑️</button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {editandoId === c.id ? (
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <input 
+                                            type="text" value={textoEditado} onChange={(e) => setTextoEditado(e.target.value)} 
+                                            style={{ flexGrow: 1, padding: '5px', backgroundColor: '#333', color: '#fff', border: '1px solid #555', borderRadius: '4px' }}
+                                        />
+                                        <button onClick={() => handleGuardarEdicion(c.id)} style={{ padding: '5px 10px', background: '#4ade80', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Guardar</button>
+                                        <button onClick={() => setEditandoId(null)} style={{ padding: '5px 10px', background: '#555', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancelar</button>
+                                    </div>
+                                ) : (
+                                    <p style={{ margin: 0, color: '#ccc', lineHeight: '1.4' }}>{c.comentario}</p>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
             </div>
         </div>
     );
