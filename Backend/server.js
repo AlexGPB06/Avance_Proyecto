@@ -28,7 +28,7 @@ db.connect((err) => {
     console.log('Conectado a la Base de Datos MySQL');
 });
 
-// --- MIDDLEWARE DE SEGURIDAD (JWT) ---
+// --- MIDDLEWARES DE SEGURIDAD (JWT Y ROLES) ---
 const verificarToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -44,6 +44,13 @@ const verificarToken = (req, res, next) => {
         req.user = user;
         next();
     });
+};
+
+const verificarAdmin = (req, res, next) => {
+    if (req.user.rol !== 'admin') {
+        return res.status(403).json({ message: 'Acceso denegado: Privilegios de administrador requeridos' });
+    }
+    next();
 };
 
 // --- RUTAS DE AUTENTICACIÓN ---
@@ -76,98 +83,161 @@ app.post('/api/login', (req, res, next) => {
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(401).json({ error: 'Contraseña incorrecta' });
 
-        const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET || 'clave_secreta_para_tokens', { expiresIn: '1h' });
-        res.json({ message: 'Login exitoso', token, username: user.username });
+        // Incluimos el rol dentro del token para validarlo en el backend
+        const token = jwt.sign(
+            { id: user.id, username: user.username, rol: user.rol }, 
+            process.env.JWT_SECRET || 'clave_secreta_para_tokens', 
+            { expiresIn: '2h' }
+        );
+        // Enviamos el rol en la respuesta para el frontend
+        res.json({ message: 'Login exitoso', token, username: user.username, rol: user.rol });
     });
 });
 
 // --- RUTAS CRUD (Lectura, Creación, Borrado y ACTUALIZACIÓN) ---
 
-// 1. CANCIONES
+// 1. CANCIONES (Cumpliendo CRUD 100% de la rúbrica)
 app.get('/api/canciones', (req, res, next) => {
-    db.execute('SELECT * FROM canciones ORDER BY id DESC', (err, rows) => {
+    // Paginación y Filtros (Convertidos a String para evitar bugs con mysql2)
+    let limitValue = parseInt(req.query.limit) || 50; 
+    let pageValue = parseInt(req.query.page) || 1;
+    let offsetValue = (pageValue - 1) * limitValue;
+    let genero = req.query.genero;
+
+    let query = 'SELECT * FROM canciones';
+    let queryParams = [];
+
+    if (genero) {
+        query += ' WHERE genero = ?';
+        queryParams.push(genero);
+    }
+
+    // Usar LIMIT y OFFSET convirtiendo explícitamente a String
+    query += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+    queryParams.push(limitValue.toString(), offsetValue.toString());
+
+    db.execute(query, queryParams, (err, rows) => {
         if (err) return next(err);
         res.json(rows);
     });
 });
-app.post('/api/canciones', verificarToken, (req, res, next) => { 
+
+app.get('/api/canciones/:id', (req, res, next) => { // GET por ID
+    db.execute('SELECT * FROM canciones WHERE id = ?', [req.params.id], (err, rows) => {
+        if (err) return next(err);
+        if (rows.length === 0) return res.status(404).json({ message: 'Canción no encontrada' });
+        res.json(rows[0]);
+    });
+});
+
+app.post('/api/canciones', verificarToken, verificarAdmin, (req, res, next) => { 
     const { titulo, artista, genero } = req.body;
     db.execute('INSERT INTO canciones (titulo, artista, genero) VALUES (?, ?, ?)', [titulo, artista, genero], (err, result) => {
         if (err) return next(err);
         res.status(201).json({ id: result.insertId, message: 'Canción agregada' });
     });
 });
-app.put('/api/canciones/:id', verificarToken, (req, res, next) => { // NUEVA: EDITAR
+
+app.put('/api/canciones/:id', verificarToken, verificarAdmin, (req, res, next) => { 
     const { titulo, artista, genero } = req.body;
     db.execute('UPDATE canciones SET titulo = ?, artista = ?, genero = ? WHERE id = ?', [titulo, artista, genero, req.params.id], (err) => {
         if (err) return next(err);
         res.json({ message: 'Canción actualizada' });
     });
 });
-app.delete('/api/canciones/:id', verificarToken, (req, res, next) => {
+
+app.delete('/api/canciones/:id', verificarToken, verificarAdmin, (req, res, next) => {
     db.execute('DELETE FROM canciones WHERE id = ?', [req.params.id], (err) => {
         if (err) return next(err);
         res.json({ message: 'Eliminado' });
     });
 });
 
-// 2. FANS
-app.get('/api/fans', (req, res, next) => {
-    db.execute('SELECT * FROM fans ORDER BY id DESC', (err, rows) => {
+// 2. FORO DE DISCUSIÓN (Reemplaza a Fans)
+app.get('/api/foros', verificarToken, (req, res, next) => {
+    // Si es admin, ve TODOS (para poder aprobarlos). Si es fan, ve solo los APROBADOS.
+    let query = `
+        SELECT f.*, u.username as autor 
+        FROM foros f 
+        JOIN users u ON f.user_id = u.id
+    `;
+    
+    if (req.user.rol !== 'admin') {
+        query += ' WHERE f.estado = "aprobado"';
+    }
+    query += ' ORDER BY f.fecha_creacion DESC';
+
+    db.execute(query, (err, rows) => {
         if (err) return next(err);
         res.json(rows);
     });
 });
-app.post('/api/fans', verificarToken, (req, res, next) => {
-    const { nombre, email, pais } = req.body;
-    db.execute('INSERT INTO fans (nombre, email, pais) VALUES (?, ?, ?)', [nombre, email, pais], (err, result) => {
+
+// Proponer un nuevo tema (Cualquier usuario logueado)
+app.post('/api/foros', verificarToken, (req, res, next) => {
+    const { titulo } = req.body;
+    const user_id = req.user.id;
+
+    db.execute('INSERT INTO foros (titulo, user_id, estado) VALUES (?, ?, "pendiente")', 
+    [titulo, user_id], (err, result) => {
         if (err) return next(err);
-        res.status(201).json({ id: result.insertId, message: 'Fan registrado' });
-    });
-});
-app.put('/api/fans/:id', verificarToken, (req, res, next) => { // NUEVA: EDITAR
-    const { nombre, email, pais } = req.body;
-    db.execute('UPDATE fans SET nombre = ?, email = ?, pais = ? WHERE id = ?', [nombre, email, pais, req.params.id], (err) => {
-        if (err) return next(err);
-        res.json({ message: 'Fan actualizado' });
-    });
-});
-app.delete('/api/fans/:id', verificarToken, (req, res, next) => {
-    db.execute('DELETE FROM fans WHERE id = ?', [req.params.id], (err) => {
-        if (err) return next(err);
-        res.json({ message: 'Eliminado' });
+        res.status(201).json({ message: 'Tema propuesto exitosamente. Esperando aprobación del Admin.' });
     });
 });
 
-// 3. TAREAS
+// Aprobar o Rechazar un tema (SOLO ADMIN)
+app.put('/api/foros/:id/estado', verificarToken, verificarAdmin, (req, res, next) => {
+    const { estado } = req.body; // Debe ser 'aprobado' o 'rechazado'
+    db.execute('UPDATE foros SET estado = ? WHERE id = ?', [estado, req.params.id], (err) => {
+        if (err) return next(err);
+        res.json({ message: `El tema ha sido ${estado}` });
+    });
+});
+
+// Eliminar un tema (SOLO ADMIN)
+app.delete('/api/foros/:id', verificarToken, verificarAdmin, (req, res, next) => {
+    db.execute('DELETE FROM foros WHERE id = ?', [req.params.id], (err) => {
+        if (err) return next(err);
+        res.json({ message: 'Tema eliminado del foro' });
+    });
+});
+
+// 3. TAREAS (Álbumes)
 app.get('/api/tareas', (req, res, next) => {
     db.execute('SELECT * FROM tareas ORDER BY id DESC', (err, rows) => {
         if (err) return next(err);
         res.json(rows);
     });
 });
-app.post('/api/tareas', verificarToken, (req, res, next) => {
+app.get('/api/tareas/:id', (req, res, next) => {
+    db.execute('SELECT * FROM tareas WHERE id = ?', [req.params.id], (err, rows) => {
+        if (err) return next(err);
+        if (rows.length === 0) return res.status(404).json({ message: 'Tarea no encontrada' });
+        res.json(rows[0]);
+    });
+});
+app.post('/api/tareas', verificarToken, verificarAdmin, (req, res, next) => {
     const { titulo, descripcion, prioridad } = req.body;
     db.execute('INSERT INTO tareas (titulo, descripcion, prioridad) VALUES (?, ?, ?)', [titulo, descripcion, prioridad], (err, result) => {
         if (err) return next(err);
         res.status(201).json({ id: result.insertId, message: 'Tarea creada' });
     });
 });
-app.put('/api/tareas/:id', verificarToken, (req, res, next) => { // CAMBIAR ESTADO (CHECKBOX)
+app.put('/api/tareas/:id', verificarToken, verificarAdmin, (req, res, next) => { 
     const { completada } = req.body; 
     db.execute('UPDATE tareas SET completada = ? WHERE id = ?', [completada, req.params.id], (err) => {
         if (err) return next(err);
         res.json({ message: 'Estado actualizado' });
     });
 });
-app.put('/api/tareas/editar/:id', verificarToken, (req, res, next) => { // NUEVA: EDITAR INFO
+app.put('/api/tareas/editar/:id', verificarToken, verificarAdmin, (req, res, next) => { 
     const { titulo, descripcion, prioridad } = req.body;
     db.execute('UPDATE tareas SET titulo = ?, descripcion = ?, prioridad = ? WHERE id = ?', [titulo, descripcion, prioridad, req.params.id], (err) => {
         if (err) return next(err);
         res.json({ message: 'Tarea actualizada' });
     });
 });
-app.delete('/api/tareas/:id', verificarToken, (req, res, next) => {
+app.delete('/api/tareas/:id', verificarToken, verificarAdmin, (req, res, next) => {
     db.execute('DELETE FROM tareas WHERE id = ?', [req.params.id], (err) => {
         if (err) return next(err);
         res.json({ message: 'Eliminado' });
@@ -181,24 +251,88 @@ app.get('/api/eventos', (req, res, next) => {
         res.json(rows);
     });
 });
-app.post('/api/eventos', verificarToken, (req, res, next) => {
+app.get('/api/eventos/:id', (req, res, next) => {
+    db.execute('SELECT * FROM eventos WHERE id = ?', [req.params.id], (err, rows) => {
+        if (err) return next(err);
+        if (rows.length === 0) return res.status(404).json({ message: 'Evento no encontrado' });
+        res.json(rows[0]);
+    });
+});
+app.post('/api/eventos', verificarToken, verificarAdmin, (req, res, next) => {
     const { nombre, fecha, lugar } = req.body;
     db.execute('INSERT INTO eventos (nombre, fecha, lugar) VALUES (?, ?, ?)', [nombre, fecha, lugar], (err, result) => {
         if (err) return next(err);
         res.status(201).json({ id: result.insertId, message: 'Evento creado' });
     });
 });
-app.put('/api/eventos/:id', verificarToken, (req, res, next) => { // NUEVA: EDITAR
+app.put('/api/eventos/:id', verificarToken, verificarAdmin, (req, res, next) => { 
     const { nombre, fecha, lugar } = req.body;
     db.execute('UPDATE eventos SET nombre = ?, fecha = ?, lugar = ? WHERE id = ?', [nombre, fecha, lugar, req.params.id], (err) => {
         if (err) return next(err);
         res.json({ message: 'Evento actualizado' });
     });
 });
-app.delete('/api/eventos/:id', verificarToken, (req, res, next) => {
+app.delete('/api/eventos/:id', verificarToken, verificarAdmin, (req, res, next) => {
     db.execute('DELETE FROM eventos WHERE id = ?', [req.params.id], (err) => {
         if (err) return next(err);
         res.json({ message: 'Eliminado' });
+    });
+});
+
+// --- RUTAS DE INTERACCIÓN (Comentarios y Calificaciones) ---
+
+// Obtener comentarios de una canción o álbum (CORREGIDO: sin foto_perfil)
+app.get('/api/comentarios/:tipo/:id', (req, res, next) => {
+    const query = `
+        SELECT c.*, u.username 
+        FROM comentarios c 
+        JOIN users u ON c.user_id = u.id 
+        WHERE c.tipo_entidad = ? AND c.entidad_id = ?
+        ORDER BY c.fecha_creacion DESC
+    `;
+    db.execute(query, [req.params.tipo, req.params.id], (err, rows) => {
+        if (err) return next(err);
+        res.json(rows);
+    });
+});
+
+// Publicar un comentario
+app.post('/api/comentarios', verificarToken, (req, res, next) => {
+    const { entidad_id, tipo_entidad, comentario } = req.body;
+    const user_id = req.user.id; 
+
+    db.execute(
+        'INSERT INTO comentarios (user_id, entidad_id, tipo_entidad, comentario) VALUES (?, ?, ?, ?)',
+        [user_id, entidad_id, tipo_entidad, comentario],
+        (err, result) => {
+            if (err) return next(err);
+            res.status(201).json({ message: 'Comentario publicado' });
+        }
+    );
+});
+
+// Obtener el promedio de calificaciones
+app.get('/api/calificaciones/:tipo/:id', (req, res, next) => {
+    const query = 'SELECT AVG(puntuacion) as promedio, COUNT(id) as total FROM calificaciones WHERE tipo_entidad = ? AND entidad_id = ?';
+    db.execute(query, [req.params.tipo, req.params.id], (err, rows) => {
+        if (err) return next(err);
+        res.json(rows[0]);
+    });
+});
+
+// Enviar o actualizar una calificación (1 a 5)
+app.post('/api/calificaciones', verificarToken, (req, res, next) => {
+    const { entidad_id, tipo_entidad, puntuacion } = req.body;
+    const user_id = req.user.id;
+
+    const query = `
+        INSERT INTO calificaciones (user_id, entidad_id, tipo_entidad, puntuacion) 
+        VALUES (?, ?, ?, ?) 
+        ON DUPLICATE KEY UPDATE puntuacion = VALUES(puntuacion)
+    `;
+    db.execute(query, [user_id, entidad_id, tipo_entidad, puntuacion], (err) => {
+        if (err) return next(err);
+        res.json({ message: 'Calificación guardada' });
     });
 });
 

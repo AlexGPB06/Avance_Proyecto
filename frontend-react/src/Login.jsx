@@ -25,6 +25,7 @@ function Login() {
       });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('currentUser', formData.username);
+      localStorage.setItem('userRol', res.data.rol); // NUEVO: Guardamos el rol
       navigate('/main');
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Error al iniciar sesión');
