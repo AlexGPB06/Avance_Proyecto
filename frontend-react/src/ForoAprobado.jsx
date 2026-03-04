@@ -6,6 +6,9 @@ const API_URL = 'http://localhost:3000/api';
 function ForoAprobado({ foro, onBack }) {
     const [comentarios, setComentarios] = useState([]);
     const [nuevoComentario, setNuevoComentario] = useState('');
+    
+    // Estado para controlar el orden (Por defecto false = Viejos arriba, Nuevos abajo)
+    const [recientesPrimero, setRecientesPrimero] = useState(false); 
 
     const token = localStorage.getItem('token');
     const authAxios = axios.create({
@@ -36,39 +39,60 @@ function ForoAprobado({ foro, onBack }) {
                 comentario: nuevoComentario
             });
             setNuevoComentario('');
-            cargarComentarios(); // Recargar el feed
+            cargarComentarios(); 
         } catch (error) { 
             alert('Error al publicar respuesta'); 
         }
     };
 
+    // Lógica para ordenar los comentarios antes de renderizarlos
+    const comentariosOrdenados = [...comentarios].sort((a, b) => {
+        const fechaA = new Date(a.fecha_creacion);
+        const fechaB = new Date(b.fecha_creacion);
+        return recientesPrimero ? fechaB - fechaA : fechaA - fechaB;
+    });
+
     return (
         <section className="section active" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {/* CABECERA DEL FORO */}
-            <div className="foro-header" style={{ borderBottom: '2px solid #333', paddingBottom: '15px', marginBottom: '20px' }}>
-                <button 
-                    onClick={onBack} 
-                    className="btn-cancel" 
-                    style={{ marginBottom: '15px', padding: '5px 15px', fontSize: '0.9em' }}
-                >
-                    ⬅ VOLVER A FOROS
-                </button>
-                <h2 style={{ color: 'var(--highlight-color)', fontSize: '2em', margin: '0 0 5px 0' }}>
+            <div className="foro-header" style={{ borderBottom: '2px solid #333', paddingBottom: '15px', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button onClick={onBack} className="btn-cancel" style={{ padding: '5px 15px', fontSize: '0.9em' }}>
+                        ⬅ VOLVER A FOROS
+                    </button>
+                    
+                    {/* Botón de Filtro */}
+                    <button 
+                        onClick={() => setRecientesPrimero(!recientesPrimero)} 
+                        style={{ background: '#222', color: '#fff', border: '1px solid #555', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                        ↕️ {recientesPrimero ? 'Ver más antiguos primero' : 'Ver más recientes primero'}
+                    </button>
+                </div>
+
+                <h2 style={{ color: 'var(--highlight-color)', fontSize: '2em', margin: '15px 0 5px 0' }}>
                     {foro.titulo}
                 </h2>
-                <p style={{ color: '#888', margin: 0 }}>
+                <p style={{ color: '#888', margin: '0 0 10px 0', fontSize: '0.9em' }}>
                     Iniciado por <strong>@{foro.autor}</strong> el {new Date(foro.fecha_creacion).toLocaleDateString()}
                 </p>
+
+                {/* POST ORIGINAL (La descripción del foro) */}
+                <div style={{ background: '#111', padding: '15px', borderRadius: '6px', borderLeft: '4px solid #888', marginTop: '10px' }}>
+                    <p style={{ margin: 0, color: '#eee', fontSize: '1.1em', lineHeight: '1.5' }}>
+                        {foro.descripcion}
+                    </p>
+                </div>
             </div>
 
-            {/* FEED DE COMENTARIOS (Estilo Twitter/Reddit) */}
-            <div className="comentarios-feed" style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', paddingRight: '10px', marginBottom: '20px' }}>
-                {comentarios.length === 0 ? (
-                    <p className="empty-message" style={{ textAlign: 'center', marginTop: '50px' }}>
+            {/* FEED DE COMENTARIOS */}
+            <div className="comentarios-feed" style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', paddingRight: '10px', paddingBottom: '20px' }}>
+                {comentariosOrdenados.length === 0 ? (
+                    <p className="empty-message" style={{ textAlign: 'center', marginTop: '30px' }}>
                         No hay respuestas aún. ¡Sé el primero en opinar!
                     </p>
                 ) : (
-                    comentarios.map(c => (
+                    comentariosOrdenados.map(c => (
                         <div key={c.id} className="comentario-card" style={{ 
                             background: '#1a1a1a', 
                             padding: '15px 20px', 
@@ -90,7 +114,7 @@ function ForoAprobado({ foro, onBack }) {
                 )}
             </div>
 
-            {/* CAJA DE RESPUESTA FIJA AL FONDO */}
+            {/* CAJA DE RESPUESTA */}
             <div className="form-section" style={{ marginTop: 'auto', marginBottom: '0', padding: '15px', background: '#0a0a0a', border: '1px solid #333' }}>
                 <form onSubmit={handleComentar} style={{ display: 'flex', gap: '10px' }}>
                     <input 

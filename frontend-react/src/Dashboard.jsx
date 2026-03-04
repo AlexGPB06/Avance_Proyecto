@@ -1,38 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Importamos nuestros nuevos componentes limpios y separados
+// Importación de componentes individuales para una mejor organización
 import Canciones from './Canciones';
 import Foros from './Foros';
 import Albumes from './Albumes';
 import Eventos from './Eventos';
+import Perfil from './perfil';
 
 import './Css/styles.css';
 
 function Dashboard() {
   const navigate = useNavigate();
   
-  // Estado para controlar qué sección está visible en el centro
+  // Estado para controlar la sección activa en el panel central
   const [activeSection, setActiveSection] = useState('canciones');
   
-  // Estados de autenticación
+  // Estados para la información del usuario en sesión
   const [currentUser, setCurrentUser] = useState('');
   const [userRol, setUserRol] = useState('');
 
   const token = localStorage.getItem('token');
 
-  // Verificamos si hay token al entrar a la página
   useEffect(() => {
+    // Redirigir al login si no existe un token de sesión
     if (!token) {
       navigate('/');
       return;
     }
-    // Recuperamos los datos del usuario logueado
+    // Recuperar datos del usuario guardados durante el login
     setCurrentUser(localStorage.getItem('currentUser')?.toUpperCase() || '');
     setUserRol(localStorage.getItem('userRol') || 'fan');
   }, [navigate, token]);
 
-  // Función para cerrar sesión
   const handleLogout = () => {
     localStorage.clear();
     navigate('/');
@@ -40,11 +40,15 @@ function Dashboard() {
 
   return (
     <>
-      {/* BARRA SUPERIOR (Navbar) */}
+      {/* BARRA DE NAVEGACIÓN SUPERIOR */}
       <nav className="navbar">
         <div className="navbar-content">
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <img src="/img/PDG.jpeg" alt="PDG" style={{ width: '50px', height: '50px', borderRadius: '50%', border: '2px solid #ff0000' }} />
+            <img 
+              src="/img/PDG.jpeg" 
+              alt="Logo PDG" 
+              style={{ width: '50px', height: '50px', borderRadius: '50%', border: '2px solid #ff0000' }} 
+            />
             <h1 className="navbar-title">PALOMAS DEL GOBIERNO</h1>
           </div>
           <div className="navbar-user">
@@ -54,25 +58,56 @@ function Dashboard() {
         </div>
       </nav>
 
-      {/* CONTENEDOR PRINCIPAL */}
+      {/* CONTENEDOR PRINCIPAL: SIDEBAR + CONTENIDO */}
       <div className="main-container">
         
-        {/* MENÚ LATERAL (Sidebar) */}
+        {/* MENÚ LATERAL (SIDEBAR) */}
         <aside className="sidebar">
           <div className="sidebar-menu">
-            <button className={`menu-btn ${activeSection === 'canciones' ? 'active' : ''}`} onClick={() => setActiveSection('canciones')}>🎵 CANCIONES</button>
-            <button className={`menu-btn ${activeSection === 'foros' ? 'active' : ''}`} onClick={() => setActiveSection('foros')}>🗣️ FOROS</button>
-            <button className={`menu-btn ${activeSection === 'tareas' ? 'active' : ''}`} onClick={() => setActiveSection('tareas')}>💿 ALBUMES</button>
-            <button className={`menu-btn ${activeSection === 'eventos' ? 'active' : ''}`} onClick={() => setActiveSection('eventos')}>📅 EVENTOS</button>
+            <button 
+              className={`menu-btn ${activeSection === 'canciones' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('canciones')}
+            >
+              🎵 CANCIONES
+            </button>
+            <button 
+              className={`menu-btn ${activeSection === 'foros' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('foros')}
+            >
+              🗣️ FOROS
+            </button>
+            <button 
+              className={`menu-btn ${activeSection === 'tareas' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('tareas')}
+            >
+              💿 ALBUMES
+            </button>
+            <button 
+              className={`menu-btn ${activeSection === 'eventos' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('eventos')}
+            >
+              📅 EVENTOS
+            </button>
+            
+            {/* SECCIÓN DE PERFIL PERSONAL */}
+            <button 
+              className={`menu-btn ${activeSection === 'perfil' ? 'active' : ''}`} 
+              onClick={() => setActiveSection('perfil')}
+              style={{ borderTop: '1px solid #333', marginTop: '10px', paddingTop: '10px' }}
+            >
+              👤 MI PERFIL
+            </button>
           </div>
         </aside>
 
-        {/* ÁREA CENTRAL DONDE SE DIBUJAN LOS COMPONENTES */}
+        {/* ÁREA DE CONTENIDO DINÁMICO */}
         <main className="content">
+          {/* Renderizado condicional basado en la sección activa */}
           {activeSection === 'canciones' && <Canciones userRol={userRol} />}
           {activeSection === 'foros' && <Foros userRol={userRol} />}
           {activeSection === 'tareas' && <Albumes userRol={userRol} />}
           {activeSection === 'eventos' && <Eventos userRol={userRol} />}
+          {activeSection === 'perfil' && <Perfil />}
         </main>
         
       </div>

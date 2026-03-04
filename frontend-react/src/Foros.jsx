@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import ForoAprobado from './ForoAprobado'; // IMPORTAMOS LA NUEVA VISTA
+import ForoAprobado from './ForoAprobado';
 
 const API_URL = 'http://localhost:3000/api';
 
 function Foros({ userRol }) {
   const [data, setData] = useState([]);
-  const [newItem, setNewItem] = useState({ titulo: '' });
-  
-  // ESTADO CLAVE: Controla si vemos la lista o un foro específico
+  // Añadimos 'descripcion' al estado inicial
+  const [newItem, setNewItem] = useState({ titulo: '', descripcion: '' }); 
   const [foroActivo, setForoActivo] = useState(null); 
 
   const token = localStorage.getItem('token');
@@ -32,10 +31,13 @@ function Foros({ userRol }) {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!newItem.titulo.trim()) return;
+    if (!newItem.titulo.trim() || !newItem.descripcion.trim()) {
+        alert("Por favor llena el título y la descripción.");
+        return;
+    }
     try {
       await authAxios.post('/foros', newItem);
-      setNewItem({ titulo: '' });
+      setNewItem({ titulo: '', descripcion: '' }); // Limpiamos ambos campos
       cargarDatos();
       alert('🗣️ PROPUESTA ENVIADA. Un administrador la revisará pronto.');
     } catch (error) {
@@ -62,17 +64,10 @@ function Foros({ userRol }) {
     }
   };
 
-  // SI HAY UN FORO SELECCIONADO, RENDERIZAMOS LA PANTALLA EXCLUSIVA DEL FORO
   if (foroActivo) {
-      return (
-          <ForoAprobado 
-              foro={foroActivo} 
-              onBack={() => setForoActivo(null)} // Función para regresar a la lista
-          />
-      );
+      return <ForoAprobado foro={foroActivo} onBack={() => setForoActivo(null)} />;
   }
 
-  // SI NO HAY FORO SELECCIONADO, RENDERIZAMOS LA LISTA NORMAL
   return (
     <section className="section active">
       <div className="section-header">
@@ -81,17 +76,26 @@ function Foros({ userRol }) {
 
       <div className="form-section">
         <h3>PROPONER NUEVO TEMA</h3>
-        <form onSubmit={handleAdd} className="form-group-row">
+        <form onSubmit={handleAdd} className="form-group-column">
           <input 
             type="text" 
             name="titulo" 
-            placeholder="¿De qué quieres hablar en el foro?" 
+            placeholder="Título del tema (Ej: ¿Cuál es su álbum favorito?)" 
             className="form-input" 
             value={newItem.titulo} 
-            onChange={(e) => setNewItem({ titulo: e.target.value })} 
+            onChange={(e) => setNewItem({ ...newItem, titulo: e.target.value })} 
             required 
           />
-          <button type="submit" className="btn-add">⚡ ENVIAR PROPUESTA</button>
+          <textarea 
+            name="descripcion" 
+            placeholder="Escribe el contexto o tu idea principal aquí..." 
+            className="form-input" 
+            style={{ resize: 'vertical', minHeight: '80px' }}
+            value={newItem.descripcion} 
+            onChange={(e) => setNewItem({ ...newItem, descripcion: e.target.value })} 
+            required 
+          />
+          <button type="submit" className="btn-add" style={{ alignSelf: 'flex-start' }}>⚡ ENVIAR PROPUESTA</button>
         </form>
       </div>
 
@@ -101,13 +105,17 @@ function Foros({ userRol }) {
             <div key={item.id} className="item-card foro-card">
               <div className="item-header">
                 <div>
-                  <h3>{item.titulo}</h3>
+                  <h3 style={{ marginBottom: '5px' }}>{item.titulo}</h3>
+                  {/* Mostramos la descripción truncada o completa en la tarjeta */}
+                  <p style={{ color: '#ccc', fontStyle: 'italic', marginBottom: '10px', fontSize: '0.9em' }}>
+                    {item.descripcion}
+                  </p>
                   
                   {item.estado === 'aprobado' && (
                     <button 
                       className="btn-action" 
                       style={{ background: '#333', color: '#fff', padding: '5px 15px', fontSize: '0.9em', marginTop: '10px', borderRadius: '4px', border: '1px solid var(--highlight-color)', cursor: 'pointer', fontWeight: 'bold' }}
-                      onClick={() => setForoActivo(item)} // AQUÍ ACTIVAMOS LA VISTA EXCLUSIVA
+                      onClick={() => setForoActivo(item)}
                     >
                       💬 Entrar a la conversación
                     </button>

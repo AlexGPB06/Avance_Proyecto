@@ -54,22 +54,38 @@ const verificarAdmin = (req, res, next) => {
 };
 
 // --- RUTAS DE AUTENTICACIÓN ---
+// REGISTRO DE USUARIOS CON NUEVOS CAMPOS Y VALIDACIÓN ÚNICA
 app.post('/api/register', async (req, res, next) => {
-    try {
-        const { username, password, email } = req.body;
-        if (!username || !password) return res.status(400).json({ message: 'Usuario y contraseña requeridos' });
+    // Ahora recibimos los nuevos datos desde el frontend
+    const { username, email, password, fecha_nacimiento, sexo } = req.body;
 
+    try {
+        // Encriptar la contraseña (asumiendo que usas bcrypt)
         const hashedPassword = await bcrypt.hash(password, 10);
-        const query = 'INSERT INTO users (username, password, email) VALUES (?, ?, ?)';
-        
-        db.execute(query, [username, hashedPassword, email], (err, result) => {
-            if (err) {
-                if (err.errno === 1062) return res.status(400).json({ message: 'El usuario ya existe' });
-                return next(err); 
+
+        // Insertar en la base de datos
+        db.execute(
+            'INSERT INTO users (username, email, password, rol, fecha_nacimiento, sexo) VALUES (?, ?, ?, "fan", ?, ?)',
+            [username, email, hashedPassword, fecha_nacimiento, sexo || 'Prefiero no decirlo'],
+            (err, result) => {
+                if (err) {
+                    // ER_DUP_ENTRY es el código de MySQL cuando intentas meter un dato duplicado en un campo UNIQUE
+                    if (err.code === 'ER_DUP_ENTRY') {
+                        if (err.sqlMessage.includes('username')) {
+                            return res.status(400).json({ message: '🚨 Este nombre de usuario ya está ocupado. Elige otro.' });
+                        }
+                        if (err.sqlMessage.includes('email')) {
+                            return res.status(400).json({ message: '🚨 Este correo electrónico ya está registrado.' });
+                        }
+                    }
+                    return next(err); // Si es otro error, lo pasamos al manejador de errores
+                }
+                res.status(201).json({ message: '¡Cuenta creada exitosamente!' });
             }
-            res.status(201).json({ message: 'Usuario registrado exitosamente' });
-        });
-    } catch (error) { next(error); }
+        );
+    } catch (error) {
+        next(error);
+    }
 });
 
 app.post('/api/login', (req, res, next) => {
@@ -175,11 +191,11 @@ app.get('/api/foros', verificarToken, (req, res, next) => {
 
 // Proponer un nuevo tema (Cualquier usuario logueado)
 app.post('/api/foros', verificarToken, (req, res, next) => {
-    const { titulo } = req.body;
+    const { titulo, descripcion } = req.body; // AHORA RECIBE LA DESCRIPCIÓN
     const user_id = req.user.id;
 
-    db.execute('INSERT INTO foros (titulo, user_id, estado) VALUES (?, ?, "pendiente")', 
-    [titulo, user_id], (err, result) => {
+    db.execute('INSERT INTO foros (titulo, descripcion, user_id, estado) VALUES (?, ?, ?, "pendiente")', 
+    [titulo, descripcion, user_id], (err, result) => {
         if (err) return next(err);
         res.status(201).json({ message: 'Tema propuesto exitosamente. Esperando aprobación del Admin.' });
     });
@@ -333,6 +349,60 @@ app.post('/api/calificaciones', verificarToken, (req, res, next) => {
     db.execute(query, [user_id, entidad_id, tipo_entidad, puntuacion], (err) => {
         if (err) return next(err);
         res.json({ message: 'Calificación guardada' });
+    });
+});
+
+// --- RUTAS DE MI PERFIL ---
+
+// Obtener todos los datos del perfil (Usuario, Foros y Favoritos)
+app.get('/api/perfil', verificarToken, (req, res, next) => {
+    const userId = req.user.id;
+    
+    // 1. Traemos los datos del usuario
+    db.execute('SELECT username, email, rol, descripcion, fecha_registro FROM users WHERE id = ?', [userId], (err, userRows) => {
+        if (err) return next(err);
+        if (userRows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
+        
+        const userData = userRows[0];
+
+        // 2. Traemos los foros creados por este usuario
+        db.execute('SELECT * FROM foros WHERE user_id = ? ORDER BY fecha_creacion DESC', [userId], (err, forosRows) => {
+            if (err) return next(err);
+            
+            // 3. Traemos sus "Favoritos" (Canciones y Álbumes que ha calificado con 4 o 5 estrellas)
+            const queryFavoritos = `
+                SELECT c.id, c.titulo, c.artista as subtitulo, cal.puntuacion, 'cancion' as tipo 
+                FROM canciones c 
+                JOIN calificaciones cal ON c.id = cal.entidad_id AND cal.tipo_entidad = 'cancion' 
+                WHERE cal.user_id = ? AND cal.puntuacion >= 4
+                UNION
+                SELECT t.id, t.titulo, t.descripcion as subtitulo, cal.puntuacion, 'tarea' as tipo 
+                FROM tareas t 
+                JOIN calificaciones cal ON t.id = cal.entidad_id AND cal.tipo_entidad = 'tarea' 
+                WHERE cal.user_id = ? AND cal.puntuacion >= 4
+                ORDER BY puntuacion DESC
+            `;
+            
+            db.execute(queryFavoritos, [userId, userId], (err, favoritosRows) => {
+                if (err) return next(err);
+                
+                // Enviamos todo empaquetado al frontend
+                res.json({
+                    usuario: userData,
+                    foros: forosRows,
+                    favoritos: favoritosRows
+                });
+            });
+        });
+    });
+});
+
+// Actualizar la descripción/biografía del usuario
+app.put('/api/perfil/descripcion', verificarToken, (req, res, next) => {
+    const { descripcion } = req.body;
+    db.execute('UPDATE users SET descripcion = ? WHERE id = ?', [descripcion, req.user.id], (err) => {
+        if (err) return next(err);
+        res.json({ message: 'Descripción actualizada correctamente' });
     });
 });
 
