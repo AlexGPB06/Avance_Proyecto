@@ -106,42 +106,64 @@ function Inicio({ userRol }) {
         }
     };
 
+    // Función reescrita para que el diseño no se rompa nunca
     const renderSlot = (tipo, slotName, tituloSeccion) => {
         const slotData = destacados.slots.find(s => s.slot === slotName);
         const listaOpciones = tipo === 'cancion' ? destacados.canciones : destacados.albumes;
         const itemSeleccionado = listaOpciones.find(i => i.id === slotData?.item_id);
 
         return (
-            <div className="item-card" style={{ background: '#111', padding: '15px', position: 'relative' }}>
-                <h4 style={{ color: '#888', borderBottom: '1px solid #333', paddingBottom: '5px', margin: '0 0 10px 0' }}>
-                    {tituloSeccion}
-                </h4>
-                {userRol === 'admin' ? (
-                    <select 
-                        value={slotData?.item_id || ''} 
-                        onChange={(e) => handleActualizarSlot(slotName, e.target.value)} 
-                        className="form-input" 
-                        style={{ margin: 0, width: '100%', background: '#222', color: '#fff' }}
-                    >
-                        <option value="">-- Selecciona un {tipo} --</option>
-                        {listaOpciones.map(op => <option key={op.id} value={op.id}>{op.titulo}</option>)}
-                    </select>
-                ) : (
-                    itemSeleccionado ? (
-                        <div>
-                            <h3 style={{ margin: '0 0 5px 0' }}>{itemSeleccionado.titulo}</h3>
-                            <p style={{ margin: 0, color: '#aaa' }}>{tipo === 'cancion' ? itemSeleccionado.artista : itemSeleccionado.descripcion}</p>
-                        </div>
+            <div className="item-card" style={{ background: '#111', display: 'flex', flexDirection: 'column', height: '100%', padding: '0', border: '2px solid var(--highlight-color)' }}>
+                
+                {/* CABECERA (TOP 1, RECOMENDADO, etc) */}
+                <div style={{ padding: '15px', borderBottom: '1px solid #333', background: '#0a0a0a', textAlign: 'center' }}>
+                    <h4 style={{ margin: 0, color: '#aaa', fontSize: '1.1em', letterSpacing: '1px' }}>
+                        {tituloSeccion}
+                    </h4>
+                </div>
+
+                {/* CONTENIDO DE LA CANCIÓN / ÁLBUM (Empuja el select hacia abajo) */}
+                <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flexGrow: 1, alignItems: 'center' }}>
+                    {itemSeleccionado ? (
+                        <>
+                            <img 
+                                src={itemSeleccionado.imagen_url || `/img/${tipo}_${itemSeleccionado.id}.jpg`} 
+                                onError={(e) => { 
+                                    e.target.onerror = null; 
+                                    e.target.src = '/img/placeholder.png'; 
+                                }}
+                                alt={`Portada de ${itemSeleccionado.titulo}`}
+                                style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)', marginBottom: '15px' }}
+                            />
+                            <h3 style={{ margin: '0 0 5px 0', textAlign: 'center', fontSize: '1.4em', color: '#fff' }}>{itemSeleccionado.titulo}</h3>
+                            <p style={{ margin: 0, color: '#888', textAlign: 'center' }}>{tipo === 'cancion' ? itemSeleccionado.artista : itemSeleccionado.descripcion}</p>
+                        </>
                     ) : (
-                        <p style={{ color: '#555', fontStyle: 'italic' }}>Próximamente...</p>
-                    )
+                        <div style={{ width: '100%', height: '200px', background: '#1a1a1a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', border: '1px dashed #444' }}>
+                            <p style={{ color: '#555', fontStyle: 'italic', margin: 0 }}>Espacio Disponible</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* SELECT DE ADMIN (Siempre al final, alineado) */}
+                {userRol === 'admin' && (
+                    <div style={{ padding: '15px', background: '#050505', borderTop: '1px solid #333', marginTop: 'auto' }}>
+                        <select 
+                            value={slotData?.item_id || ''} 
+                            onChange={(e) => handleActualizarSlot(slotName, e.target.value)} 
+                            style={{ margin: 0, width: '100%', padding: '10px', background: '#222', color: '#fff', border: '1px solid var(--highlight-color)', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                        >
+                            <option value="">-- Cambiar {tipo} --</option>
+                            {listaOpciones.map(op => <option key={op.id} value={op.id}>{op.titulo}</option>)}
+                        </select>
+                    </div>
                 )}
             </div>
         )
     };
 
     return (
-        <section className="animate-fade-in section active" style={{ padding: '0', display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
+        <section className="animate-fade-in section active" style={{ padding: '0', display: 'flex', flexDirection: 'column', gap: '30px', position: 'relative' }}>
             
             {/* MODAL DEL AVISO POP-UP */}
             {modalAvisoAbierto && ultimoAviso && (
@@ -155,16 +177,17 @@ function Inicio({ userRol }) {
                 </div>
             )}
 
-            {/* 1. BANNER TOP DESDE CARPETA LOCAL */}
+            {/* 1. BANNER TOP */}
             <div style={{ position: 'relative', width: '100%', height: '300px', backgroundImage: "url('/img/141109487eecf71695ce3d30be6977ca.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '0 0 8px 8px', filter: 'brightness(0.7)' }}>
-                {/* No hay botones de editar, se edita subiendo el archivo a la carpeta */}
             </div>
 
-            <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* 2. CANCIONES Y ÁLBUMES DESTACADOS */}
+            {/* 2. CANCIONES Y ÁLBUMES (USANDO LAS CLASES DE GRID) */}
+            <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
                 <div>
-                    <h2 style={{ borderBottom: '2px solid var(--highlight-color)', paddingBottom: '10px' }}>🎵 Canciones Destacadas</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+                    <h2 style={{ borderBottom: '2px solid var(--highlight-color)', paddingBottom: '10px', marginBottom: '20px' }}>🎵 Canciones Destacadas</h2>
+                    
+                    {/* AQUÍ APLICAMOS LA CLASE PARA QUE SEAN 3 COLUMNAS */}
+                    <div className="home-grid-3">
                         {renderSlot('cancion', 'cancion1', 'TOP 1')}
                         {renderSlot('cancion', 'cancion2', 'TOP 2')}
                         {renderSlot('cancion', 'cancion3', 'TOP 3')}
@@ -172,15 +195,17 @@ function Inicio({ userRol }) {
                 </div>
 
                 <div>
-                    <h2 style={{ borderBottom: '2px solid var(--highlight-color)', paddingBottom: '10px' }}>💿 Álbumes de la Semana</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                    <h2 style={{ borderBottom: '2px solid var(--highlight-color)', paddingBottom: '10px', marginBottom: '20px' }}>💿 Álbumes de la Semana</h2>
+                    
+                    {/* AQUÍ APLICAMOS LA CLASE PARA QUE SEAN 2 COLUMNAS */}
+                    <div className="home-grid-2">
                         {renderSlot('album', 'album1', 'RECOMENDADO')}
                         {renderSlot('album', 'album2', 'CLÁSICO')}
                     </div>
                 </div>
             </div>
 
-            {/* 3. ENCUESTA ESTILO PHAN-SITE */}
+            {/* 3. ENCUESTA */}
             <div style={{ padding: '0 20px', marginTop: '10px' }}>
                 <div style={{ background: '#111', border: '3px solid #333', borderRadius: '8px', padding: '30px', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
@@ -279,9 +304,8 @@ function Inicio({ userRol }) {
                 </div>
             )}
 
-            {/* 5. BANNER BOTTOM DESDE CARPETA LOCAL */}
+            {/* 5. BANNER BOTTOM */}
             <div style={{ position: 'relative', width: '100%', height: '200px', backgroundImage: "url('/img/141109487eecf71695ce3d30be6977ca.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', marginTop: '20px', filter: 'brightness(0.7)' }}>
-                {/* Igual, sin botones para editar. Se cambia el archivo en la carpeta. */}
             </div>
             
         </section>

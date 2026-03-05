@@ -101,7 +101,7 @@ button { font-family: 'Impact', 'Arial Black', sans-serif !important; text-trans
 .btn-delete { background: rgba(255, 0, 0, 0.9); color: white; border: 2px solid #000; border-radius: 50%; width: 40px; height: 40px; display: inline-flex; justify-content: center; align-items: center; font-size: 1.2rem; box-shadow: 3px 3px 0px #000; }
 .btn-delete:hover { background: #ff0000; transform: scale(1.2) rotate(15deg); box-shadow: 0 0 15px rgba(255,0,0,0.8); }
 
-/* Tarjetas */
+/* Tarjetas Generales */
 .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
 .item-card { background: rgba(10, 10, 10, 0.95); border: 3px solid var(--highlight-color); display: flex; flex-direction: column; overflow: hidden; transition: var(--transition-elastic); box-shadow: var(--shadow-hard); backdrop-filter: blur(5px); opacity: 0; animation: fadeInUp 0.6s ease-out forwards; }
 .item-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: var(--shadow-hard-hover), var(--neon-glow); border-color: #ff3333; }
@@ -121,13 +121,28 @@ button { font-family: 'Impact', 'Arial Black', sans-serif !important; text-trans
 .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2.2em; color: #aaa; cursor: pointer; transition: var(--transition-smooth); line-height: 1; z-index: 100; }
 .close-btn:hover { color: var(--highlight-color); transform: scale(1.3) rotate(90deg); }
 
-/* ==========================================================================
-   INTERFAZ DE FOROS Y CHAT
-   ========================================================================== */
+/* Interfaz de Foros y Chat */
 .foro-reply-container { position: sticky; bottom: 0; padding: 20px; background: rgba(10,10,10,0.98); border-top: 3px solid var(--highlight-color); margin: 20px -20px -20px -20px; z-index: 10; box-shadow: 0 -10px 20px rgba(0,0,0,0.8); }
 .foro-reply-form { display: flex; gap: 15px; align-items: flex-end; }
 .foro-textarea { resize: vertical; min-height: 50px; max-height: 150px; flex-grow: 1; background: #222; margin: 0; }
 .comentario-caja { background: #151515; padding: 15px 20px; border-radius: 0px 15px 15px 15px; border-left: 4px solid #00e5ff; margin-left: 20px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 15px; }
+
+/* ==========================================================================
+   NUEVO: GRILLAS PARA LA PANTALLA DE INICIO (HOME)
+   ========================================================================== */
+.home-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: stretch;
+}
+
+.home-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    align-items: stretch;
+}
 
 /* ==========================================================================
    MEDIA QUERIES (REDISEÑO MÓVIL A PRUEBA DE BALAS)
@@ -143,45 +158,35 @@ button { font-family: 'Impact', 'Arial Black', sans-serif !important; text-trans
     .menu-toggle-btn { display: block; }
     .main-container { display: flex; flex-direction: column; padding: 10px; }
     
-    /* Menú lateral plegable */
     .sidebar { display: none; width: 100%; margin-bottom: 20px; padding: 15px; }
     .sidebar.open { display: block; animation: fadeIn 0.3s ease; }
     .sidebar-menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .menu-btn { width: 100%; margin: 0; }
 
-    /* REDISEÑO DEL NAVBAR SUPERIOR EN MÓVIL */
     .navbar-content { flex-direction: column; gap: 15px; padding: 10px; }
     .navbar-brand { flex-direction: column; gap: 5px; text-align: center; }
     .navbar-brand img { width: 60px; height: 60px; }
     .navbar-title { font-size: 1.6em; text-align: center; }
     
-    /* La caja de notificaciones, nombre y salir se vuelve un panel ordenado */
-    .navbar-user {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
-        background: rgba(255, 0, 0, 0.1);
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 0, 0, 0.3);
-        gap: 15px;
-    }
+    .navbar-user { width: 100%; justify-content: center; flex-wrap: wrap; background: rgba(255, 0, 0, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 0, 0, 0.3); gap: 15px; }
 
-    /* FOROS Y CHAT MÓVIL (Súper fácil de tocar) */
     .foro-reply-form { flex-direction: column; gap: 10px; align-items: stretch; }
     .foro-textarea { min-height: 100px; font-size: 16px !important; }
     .foro-reply-form button { padding: 15px; font-size: 1.1em; margin: 0; }
 
-    /* Modal perfecto en móvil */
     .modal { padding: 15px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
     .modal-content { width: 100% !important; max-width: 95vw !important; max-height: 85vh !important; margin: auto !important; padding: 20px 15px !important; display: flex !important; flex-direction: column !important; }
     .modal-header-custom h2 { font-size: 1.2em; padding-right: 35px; }
     .modal-form-inline { flex-direction: column !important; gap: 10px !important; width: 100% !important; }
     .modal-form-inline input, .modal-form-inline button { width: 100% !important; margin: 0 !important; }
 
-    /* Perfil */
     div[style*="minmax(250px, 1fr) 2fr"] { display: flex !important; flex-direction: column !important; gap: 20px !important; }
     .gafete-vip { width: 100%; }
+
+    /* REDISEÑO DE GRILLAS EN MÓVIL (Fuerza 1 sola columna) */
+    .home-grid-3, .home-grid-2 {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 @media (max-width: 480px) {

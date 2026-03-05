@@ -7,8 +7,14 @@ function Perfil({ targetUsername, irAPerfil }) {
     const [perfilData, setPerfilData] = useState(null);
     const [misAmigos, setMisAmigos] = useState([]);
     const [esPrivado, setEsPrivado] = useState(false);
+    
+    // Estados para la foto
     const [editandoFoto, setEditandoFoto] = useState(false);
     const [nuevaFoto, setNuevaFoto] = useState('');
+
+    // NUEVO: Estados para la descripción
+    const [editandoDescripcion, setEditandoDescripcion] = useState(false);
+    const [nuevaDescripcion, setNuevaDescripcion] = useState('');
     
     const currentUser = localStorage.getItem('currentUser')?.toUpperCase() || '';
     const token = localStorage.getItem('token');
@@ -52,6 +58,16 @@ function Perfil({ targetUsername, irAPerfil }) {
         } catch (error) { alert('Error al actualizar la foto'); }
     };
 
+    // NUEVA FUNCIÓN: Guardar la descripción
+    const handleActualizarDescripcion = async (e) => {
+        e.preventDefault();
+        try {
+            await authAxios.put('/perfil/descripcion', { descripcion: nuevaDescripcion });
+            setEditandoDescripcion(false);
+            cargarPerfil();
+        } catch (error) { alert('Error al actualizar la descripción'); }
+    };
+
     if (!perfilData) return <p style={{ textAlign: 'center', marginTop: '50px', color: 'var(--highlight-color)' }}>Cargando perfil...</p>;
     const { usuario, foros, favoritos } = perfilData;
 
@@ -84,9 +100,40 @@ function Perfil({ targetUsername, irAPerfil }) {
                             
                             <p style={{ color: '#888', marginTop: '15px', fontSize: '0.9em' }}>Unido el: <br/>{new Date(usuario.fecha_registro).toLocaleDateString()}</p>
                             
-                            <p style={{ fontStyle: 'italic', marginTop: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', color: '#ddd' }}>
-                                "{usuario.descripcion || 'Sin descripción.'}"
-                            </p>
+                            {/* NUEVO: LÓGICA DE EDICIÓN DE DESCRIPCIÓN */}
+                            {editandoDescripcion ? (
+                                <form onSubmit={handleActualizarDescripcion} style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <textarea 
+                                        className="form-input" 
+                                        value={nuevaDescripcion} 
+                                        onChange={(e) => setNuevaDescripcion(e.target.value)} 
+                                        placeholder="Escribe sobre ti..."
+                                        style={{ resize: 'vertical', minHeight: '80px', margin: 0, fontSize: '0.9em' }}
+                                        required 
+                                    />
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button type="submit" className="btn-primary" style={{ flexGrow: 1, padding: '8px' }}>✔</button>
+                                        <button type="button" className="btn-secondary" onClick={() => setEditandoDescripcion(false)} style={{ flexGrow: 1, padding: '8px' }}>✖</button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div style={{ marginTop: '15px', position: 'relative' }}>
+                                    <p style={{ fontStyle: 'italic', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', color: '#ddd', margin: 0 }}>
+                                        "{usuario.descripcion || 'Sin descripción.'}"
+                                    </p>
+                                    
+                                    {esMiPerfil && (
+                                        <button 
+                                            onClick={() => { setNuevaDescripcion(usuario.descripcion || ''); setEditandoDescripcion(true); }} 
+                                            className="btn-secondary" 
+                                            style={{ position: 'absolute', top: '-12px', right: '-12px', width: '35px', height: '35px', borderRadius: '50%', padding: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', border: '2px solid var(--highlight-color)' }}
+                                            title="Editar Descripción"
+                                        >
+                                            ✏️
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
                             {esMiPerfil && !editandoFoto && (
                                 <button onClick={() => setEditandoFoto(true)} className="btn-secondary" style={{ width: '100%', marginTop: '20px' }}>📸 Cambiar Foto</button>
